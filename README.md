@@ -35,9 +35,10 @@ device_1 (U2) address = 001 --> spi-control-byte = 0100001x
 
 - Two HDSP-2112 displays are driven in parallel, each is selected via its own chip-select signal
 
+---
 > [!NOTE]
 > The recommended supply voltage is [4.5V to 5.5V]. The circuit used here operates the displays with 3.3V, which is in the abs. maximum range [-0.3V to 7.0V] of the data sheet. Even with this lower than suggested voltage, the displays work reliably and are shining bright. This has the advantage that no level shifters are required and the MCP23s17 can be connected directly to the ESP32. 
-
+---
 
 - For the flashing function, the displays were wired so that the left display generates the clock for the right display. ``Left SEL=3.3V`` , ``Right SEL=GND`` See specification [hp_HDSP-2112.pdf](doc/hp_HDSP-2112.pdf) page 9: meaning of signals *clock-select* (**CLS** pin 11) and *clock-input/output* (**CLK**  pin 12) 
 
