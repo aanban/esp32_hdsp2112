@@ -1,5 +1,13 @@
 # esp32_hdsp2112
 A sample ESP32 application for two vintage HDSP-2112 displays, driven with two MCP23s17 16-bit I/O expander.
+Tested with VSCode + platformio and a 38pin ESP32 NodeMCU board.
+
+```ini
+[env:esp32dev]
+platform  = espressif32
+board     = esp32dev
+framework = arduino
+```
 
 ![hdsp2112_display](doc/hdsp2112_brightness.jpg) 
 
