@@ -1,52 +1,60 @@
 #include "hdsp2112.h"
 
-HDSP2112 d; // instance of hdps2112 display driver
+///< user defined SPI interface, here ESP32 standard SPI interface (VSPI)
+constexpr int8_t s_cs   =  5;
+constexpr int8_t s_clk  = 18;
+constexpr int8_t s_mosi = 23;
+constexpr int8_t s_miso = 19;
+HDSP2112 d(s_cs,s_clk,s_mosi,s_miso); // create instance with user defined SPI
+
+///< standard SPI interface 
+// HDSP2112 d;    // create default instance
 
 // testing Character RAM, loop all internal characters and values
 void testChars() {
   d.Reset();
-  for(uint8_t ch=0; ch<64; ch++) {
+  d.SetBrightness(5);
+  for(uint8_t ch=0; ch<128; ch++) {
     d.SetPos(0);
-    d.printf("%03d %c   %03d %c",ch,ch,ch+64,ch+64);
-    delay(200);
+    d.printf("val=%03d char=%c",ch,ch);
+    delay(100);
   }
 }
 
-// testing Brightness, adjust brightness between 0=100% 7=0%
+// testing Brightness, loop brightness between 0=100% and 6=13%
 void testBrightness() {
-  d.Reset();
-  for(uint8_t icnt=0; icnt<7;icnt++) {
+  uint8_t bn_p[8] = { 100u,80u,53u,40u,27u,20u,13u,0u };
+  d.ClearDisplay();
+  for(uint8_t ic=0; ic<8; ic++) {
     d.SetPos(0);
-    d.printf("Brightness = %u",icnt);
-    d.SetBrightness(icnt);
+    d.printf("Brightness=%3u%%",bn_p[ic]);
+    d.SetBrightness(ic);
     delay(2000);
   }
 }
 
-// test Flashing Mode
+// test Flashing Mode, loop 2-character wise thru left and right display
 void testFlashing() {
-  d.Reset(); 
-  d.printf("testFlashing1234");
-  delay(1000);
-  d.SetFlashBits(0b1111000000000000);
+  uint16_t mask=3; // mask for character-positions 0..15
+  d.ClearDisplay();
+  d.printf("FlashingTest1234");
+  d.SetFlashBits(mask);
   d.FlashMode(1);
-  delay(5000);
-  d.SetFlashBits(0b0000111100000000);
-  delay(5000);
-  d.SetFlashBits(0b0000000011110000);
-  delay(5000);
-  d.SetFlashBits(0b0000000000001111);
-  delay(5000);
+  delay(1000);
+  for(uint16_t cnt=0;cnt<16;cnt+=2) {
+    d.SetFlashBits(mask << cnt);  
+    delay(5000);
+  }
   d.FlashMode(0);
 }
 
-// test Blinking Mode 
+// test Blinking Mode, both display will blink synchronous
 void testBlinking() {
-  d.Reset(); 
-  d.printf("Blinking        ");
+  d.ClearDisplay();
+  d.printf("Blinking         ");
   delay(1000);
   d.BlinkMode(1);
-  d.SetPos(11);d.printf(" ON ");
+  d.SetPos(11);d.printf("  ON");
   delay(5000);
   d.BlinkMode(0);
   d.SetPos(11);d.printf(" OFF");
@@ -54,15 +62,14 @@ void testBlinking() {
 }
 
 void setup() {
-  Serial.begin(115200);
-  printf("starting display..");
   d.Begin();
-  printf("ok\n");
+  d.printf("HDSP2112-Display");
+  delay(5000);
 }
 
 void loop() {
   testChars();
-  testBrightness();
   testFlashing();
   testBlinking();
+  testBrightness();
 }

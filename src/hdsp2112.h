@@ -6,11 +6,14 @@
 #endif
 
 // use the standard ESP32 SPI ports (SPI_CLK=18, SPI_MOSI=23, SPI_MISO=19)
-constexpr uint8_t SPI_cs = 5;          ///< SPI chip select for both mcp23s17 port expander
+constexpr int8_t SPI_cs   =  5;        ///< SPI chip select 
+constexpr int8_t SPI_clk  = 18;        ///< SPI clock 
+constexpr int8_t SPI_mosi = 23;        ///< SPI master-out-slave-in
+constexpr int8_t SPI_miso = 19;        ///< SPI master-in-slave-out
 
 // two mcp23s17 devices are connected in parallel and are accessed via addresses a[2..0]
 constexpr uint8_t MCP_a0 = 0b001;      ///< a2=0 a1=0 a0=1 0b001 --> 0x21
-constexpr uint8_t MCP_A1 = 0b111;      ///< a2=1 a1=1 a0=1 0b111 --> 0x27
+constexpr uint8_t MCP_a1 = 0b111;      ///< a2=1 a1=1 a0=1 0b111 --> 0x27
 
 // m_mcp1.port-B works a control port for the two hdsp2112 displays
 constexpr uint8_t cRES = 0b00000001;   ///< GPB0(1) = reset
@@ -41,13 +44,25 @@ class HDSP2112 : public Print {
   private:
     Adafruit_MCP23X17 m_mcp0; ///< mcs23s17 (MCP_a0) GPA[0..7]=data[0..7] GBB[0..4]=address[0..4]
     Adafruit_MCP23X17 m_mcp1; ///< mcs23s17 (MCP_A1) GBB[0..4]=[res,fl,wr,rd,cs0,cs1]
+    int8_t m_spi_cs;          ///< SPI chip-select
+    int8_t m_spi_clk;         ///< SPI clock
+    int8_t m_spi_mosi;        ///< SPI master-out-clock-in
+    int8_t m_spi_miso;        ///< SPI master-in-clock-out
     uint8_t m_ctrl;           ///< hdsp2112 control byte --> GBB[0..4]: [RES,FL,WE,CS0,CS1]
     uint8_t m_cwr;            ///< hdsp2112 control-word-register [clear, selftest, blink, flash, bright(3)]
     uint8_t m_pos;            ///< current cursor position 
+    
 
   public:
     // constructor
-    HDSP2112(void); 
+    // @param spi_cs spi chip select 
+    // @param spi_clk spi clock
+    // @param spi_mosi spi master-out-slave-in
+    // @param spi_miso spi master-in-slave-out
+    HDSP2112(const int8_t spi_cs=SPI_cs, 
+             const int8_t spi_clk=SPI_clk, 
+             const int8_t spi_mosi=SPI_mosi, 
+             const int8_t spi_miso=SPI_miso); 
 
     // reset both hdsp2112 displays 
     // - set CS=low and RES=low 
@@ -69,11 +84,24 @@ class HDSP2112 : public Print {
     // @oaram ch charcter to be printed
     void WriteChar(char ch);
 
-    // set the brightness for both displays 
+    // clear Display
+    inline void ClearDisplay(void){ 
+      SetPos(0); 
+      printf("                "); 
+      SetPos(0);
+    }
+
+    // set the brightness for left and right display
+    // extract brightness bits[0..2] and fill bit[0..2] of m_cwr register
     // @param brightness [0..7] 0=100% 7=0%
     inline void SetBrightness(uint8_t brightness) { 
-      WrData(0, adrCWR, brightness&7); // set control register of display0
-      WrData(1, adrCWR, brightness&7); // set control register of display1
+      uint8_t bn=brightness & 7;   // limit to bit[0..2]
+      for(uint8_t mc=0;mc<3;mc++){ // extract and fill bit[0..2]
+        uint8_t ms=(1u<<mc);       // mask bit
+        m_cwr = (ms==(bn&ms))? m_cwr|ms : m_cwr& ~ms; // set or clear bit within m_cwr
+      }
+      WrData(0, adrCWR, m_cwr); // set control register of left display
+      WrData(1, adrCWR, m_cwr); // set control register of right display
     }
     
     // set Flash Bits

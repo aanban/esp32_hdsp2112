@@ -4,16 +4,20 @@
 // public members of class
 // ------------------------------------------------------------------------ 
 
-HDSP2112::HDSP2112(void) {
-  m_pos  = 0;           // set cursor to leftmost position
-  m_cwr  = 0b00000000;  // hdsp2112 code-word-register
-                        // d7=clear=0 normal operation 
-                        // d6=selftest=0 off  
-                        // d5=x
-                        // d4=blink=0
-                        // d3=flash=0
-                        // bright=000 = 100%
-  m_ctrl = 0b11111111;  // mpc1 port-B = res,fl,wr,rd,cs0,cs1
+HDSP2112::HDSP2112(int8_t spi_cs, int8_t spi_clk, int8_t spi_mosi, int8_t spi_miso) {
+  m_spi_cs   = spi_cs;   // spi chipselect
+  m_spi_clk  = spi_clk;  // spi clock
+  m_spi_mosi = spi_mosi; // spi master-out-slave-in
+  m_spi_miso = spi_miso; // spi master-in-slave-out
+  m_pos = 0;             // set cursor to leftmost position
+  m_cwr = 0b00000000;    // hdsp2112 code-word-register
+                         // d7=clear=0 normal operation 
+                         // d6=selftest=0 off  
+                         // d5=x
+                         // d4=blink=0
+                         // d3=flash=0
+                         // bright=000 = 100%
+  m_ctrl = 0b11111111;   // mpc1 port-B = res,fl,wr,rd,cs0,cs1
 }
 
 void HDSP2112::Reset(void) {
@@ -28,8 +32,8 @@ void HDSP2112::Reset(void) {
 
 void HDSP2112::Begin(void) {
   // first init the two mcp23s17 and enable HEAN function
-  m_mcp0.begin_SPI(SPI_cs,&SPI,MCP_a0);  // start unit0
-  m_mcp1.begin_SPI(SPI_cs,&SPI,MCP_A1);  // start unit1
+  m_mcp0.begin_SPI(m_spi_cs,m_spi_clk,m_spi_miso,m_spi_mosi,MCP_a0);  // start unit0
+  m_mcp1.begin_SPI(m_spi_cs,m_spi_clk,m_spi_miso,m_spi_mosi,MCP_a1);  // start unit1
   m_mcp0.enableAddrPins();               // enable HAEN function
   m_mcp1.enableAddrPins();               // enable HAEN function
   for (uint8_t ic=0; ic<16; ic++){       // set all pins to OUPUT
