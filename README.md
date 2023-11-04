@@ -22,34 +22,35 @@ It is possible to connect multiple MCP23s17s to a SPI bus in parallel with a sin
 1. The address pins A0..A2 of the MCP23s17 must be wired so that each module has a unique address. 
 ```
 pre-assigned Address-Pins in this setup: 
-device_0 (U1) address = 111 --> spi-control-byte = 0100111x  
-device_1 (U2) address = 001 --> spi-control-byte = 0100001x  
+U1 address = 111 --> spi-control-byte = 0100111x  
+U2 address = 001 --> spi-control-byte = 0100001x  
 ```
 
 2. Additionally, when initializing the two MCP23s17, the `HAEN` bit (=hardware address enable) must be set within the `IOCON` register (=I/O expander configuration), i.e. call member function `enableAddrPins()`
 ```c
-  m_mcp0.enableAddrPins();  // enable HAEN function
-  m_mcp1.enableAddrPins();  // enable HAEN function
+  m_U1.enableAddrPins();  // enable HAEN function
+  m_U2.enableAddrPins();  // enable HAEN function
 ```
 
 3. The devices are selected via the **SPI control byte**  according to the pre-assigned address pins A0..A2 
 (see [mcp23s17.pdf](doc/mcp23s17.pdf) , Figure 3-5: **SPI-Control-Byte Format**, page 15) This is done internally, the address is set while calling the `begin_SPI()` member function, that is starting the SPI module. 
 
-
 ```c  
-  m_mcp0.begin_SPI(m_spi_cs,m_spi_clk,m_spi_miso,m_spi_mosi,MCP_a0);  // start unit0
-  m_mcp1.begin_SPI(m_spi_cs,m_spi_clk,m_spi_miso,m_spi_mosi,MCP_a1);  // start unit1
+  m_U1.begin_SPI(m_spi_cs,m_spi_clk,m_spi_miso,m_spi_mosi,U1_addr);
+  m_U2.begin_SPI(m_spi_cs,m_spi_clk,m_spi_miso,m_spi_mosi,U2_addr);
 ```
-
 
 The table below shows the wiring of the SPI connections for the EPS32 and the MCP23s17
 
-| ESP32-GPIO | MCP23s17 | Comment                       |
-|:----------:|:--------:|:------------------------------|
-| 05         | 11       | SPI_CS,  chip-select          |
-| 18         | 12       | SPI_CLK, clock                |
-| 23         | 13       | SPI_MOSI, master-out-slave-in |
-| 19         | 14       | SPI_MISO, master-in-slave-out |
+| ESP32-GPIO | MCP23s17 U1 | MCP23s17 U2 | Comment                       |
+|:----------:|:-----------:|:-----------:|:------------------------------|
+| 05         | 11          | 11          | SPI_CS,  chip-select          |
+| 18         | 12          | 12          | SPI_CLK, clock                |
+| 23         | 13          | 13          | SPI_MOSI, master-out-slave-in |
+| 19         | 14          | 14          | SPI_MISO, master-in-slave-out |
+|            | 15 A0 3.3v  | 15 A0 3.3v  | address                       |
+|            | 16 A1 3.3v  | 16 A1 GND   |                               |
+|            | 17 A2 3.3v  | 17 A2 GND   |                               |
 
 
 ### 1.2. wiring of the HDSP-2112
@@ -79,4 +80,4 @@ For a proper flashing function, the displays were wired so that the left display
 ---
 > [!NOTE]
 >The Selftest() function itself works, however reading the status-bit and showing `OK` or `Failed` is on the 
-todo-list. Reading means: change the `m_mcp0.pinMode()` from OUTPUT to INPUT and set RD signal for the MCP23s17 accordingly
+todo-list. Reading means: change the `m_U2.pinMode()` from OUTPUT to INPUT and set RD signal for the MCP23s17 accordingly
