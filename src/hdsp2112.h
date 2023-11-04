@@ -64,7 +64,7 @@ class HDSP2112 : public Print {
              const int8_t spi_mosi=SPI_mosi, 
              const int8_t spi_miso=SPI_miso); 
 
-    // reset both hdsp2112 displays 
+    // hardware reset for both hdsp2112 displays 
     // - set CS=low and RES=low 
     // - wait pulsewith 10µs (min. 300ns) 
     // - set CS=high and RES=high 
@@ -84,8 +84,13 @@ class HDSP2112 : public Print {
     // @oaram ch charcter to be printed
     void WriteChar(char ch);
 
+    // start selftest
+    // - set selftest bit in controll-word-register
+    // @param id 0=left 1=right display
+    void Selftest(uint8_t id);
+
     // clear Display
-    inline void ClearDisplay(void){ 
+    inline void clear(void){ 
       SetPos(0); 
       printf("                "); 
       SetPos(0);

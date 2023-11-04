@@ -83,6 +83,14 @@ void HDSP2112::WriteChar(char ch) {
   }
 }
 
+void HDSP2112::Selftest(uint8_t id) {
+  m_cwr |= cwrSelftest;      // selftest bit activ
+  WrData(id, adrCWR, m_cwr);
+  delay(6000);
+  m_cwr &= ~cwrSelftest;     // selftest bit inactiv
+  WrData(id, adrCWR, m_cwr); 
+}
+
 // ----------------------------------------------------------------------------
 // virtual functions, derived from Print class
 // ------------------------------------------------------------------------
