@@ -12,10 +12,10 @@ constexpr int8_t SPI_mosi = 23;        ///< SPI master-out-slave-in
 constexpr int8_t SPI_miso = 19;        ///< SPI master-in-slave-out
 
 // two mcp23s17 devices are connected in parallel and are accessed via addresses a[2..0]
-constexpr uint8_t MCP_a0 = 0b001;      ///< a2=0 a1=0 a0=1 0b001 --> 0x21
-constexpr uint8_t MCP_a1 = 0b111;      ///< a2=1 a1=1 a0=1 0b111 --> 0x27
+constexpr uint8_t U1_addr = 0b111;     ///< a2=1 a1=1 a0=1 0b111 --> 0x27
+constexpr uint8_t U2_addr = 0b001;     ///< a2=0 a1=0 a0=1 0b001 --> 0x21
 
-// m_mcp1.port-B works a control port for the two hdsp2112 displays
+// m_U1.port-B works a control port for the two hdsp2112 displays
 constexpr uint8_t cRES = 0b00000001;   ///< GPB0(1) = reset
 constexpr uint8_t cFL  = 0b00000010;   ///< GPB1(2) = flash-bit
 constexpr uint8_t cWR  = 0b00000100;   ///< GPB2(3) = write enable
@@ -42,8 +42,8 @@ enum class mod_e { low=0, high=1 };    ///< logic level of signals
 
 class HDSP2112 : public Print {
   private:
-    Adafruit_MCP23X17 m_mcp0; ///< mcs23s17 (MCP_a0) GPA[0..7]=data[0..7] GBB[0..4]=address[0..4]
-    Adafruit_MCP23X17 m_mcp1; ///< mcs23s17 (MCP_A1) GBB[0..4]=[res,fl,wr,rd,cs0,cs1]
+    Adafruit_MCP23X17 m_U1;   ///< mcs23s17 (U1_addr) GBB[0..4]=[res,fl,wr,rd,cs0,cs1]
+    Adafruit_MCP23X17 m_U2;   ///< mcs23s17 (U2_addr) GPA[0..7]=data[0..7] GBB[0..4]=address[0..4]
     int8_t m_spi_cs;          ///< SPI chip-select
     int8_t m_spi_clk;         ///< SPI clock
     int8_t m_spi_mosi;        ///< SPI master-out-clock-in
@@ -148,21 +148,21 @@ class HDSP2112 : public Print {
       } else {
         m_ctrl |= (0==id)? cCS0 : cCS1;
       }
-      m_mcp1.writeGPIOB(m_ctrl);
+      m_U1.writeGPIOB(m_ctrl);
     }
 
     // sets fl input of given hdsp2112 display to [low,high]
     // @param mod [low,high]
     inline void setFL(mod_e mod) {
       m_ctrl = (mod==mod_e::low) ? (m_ctrl & ~cFL) : (m_ctrl | cFL);
-      m_mcp1.writeGPIOB(m_ctrl);
+      m_U1.writeGPIOB(m_ctrl);
     }
 
     // control write_enable input of all hdsp2112 displays
     // @param mod [low,high]
     inline void setWR(mod_e mod) {
       m_ctrl = (mod==mod_e::low) ? (m_ctrl & ~cWR) : (m_ctrl | cWR);
-      m_mcp1.writeGPIOB(m_ctrl);
+      m_U1.writeGPIOB(m_ctrl);
     }
 
     // write data to given hdsp2112 display
@@ -170,7 +170,6 @@ class HDSP2112 : public Print {
     // @param addr  address to write
     // @param data  data to write
     void WrData(uint8_t id, uint8_t addr, uint8_t data);
-
 
 
     // ------------------------------------------------------------------------

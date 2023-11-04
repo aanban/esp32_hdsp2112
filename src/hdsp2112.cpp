@@ -22,31 +22,31 @@ HDSP2112::HDSP2112(int8_t spi_cs, int8_t spi_clk, int8_t spi_mosi, int8_t spi_mi
 
 void HDSP2112::Reset(void) {
   m_ctrl = m_ctrl & ~cRES & ~cCS0 & ~cCS1; 
-  m_mcp1.writeGPIOB(m_ctrl);  // reset + both cs activated
+  m_U1.writeGPIOB(m_ctrl);    // reset + both cs activated
   delayMicroseconds(10);      // wait pulse width (req. =300ns) 
   m_ctrl |= cRES|cCS0|cCS1;   
-  m_mcp1.writeGPIOB(m_ctrl);  // reset + both cs deactivated
+  m_U1.writeGPIOB(m_ctrl);    // reset + both cs deactivated
   delay(1);                   // wait 1ms until device is ready after reset (req. =110µs) 
   SetPos(0);                  // set cursor to leftmost position
 }
 
 void HDSP2112::Begin(void) {
   // first init the two mcp23s17 and enable HEAN function
-  m_mcp0.begin_SPI(m_spi_cs,m_spi_clk,m_spi_miso,m_spi_mosi,MCP_a0);  // start unit0
-  m_mcp1.begin_SPI(m_spi_cs,m_spi_clk,m_spi_miso,m_spi_mosi,MCP_a1);  // start unit1
-  m_mcp0.enableAddrPins();               // enable HAEN function
-  m_mcp1.enableAddrPins();               // enable HAEN function
-  for (uint8_t ic=0; ic<16; ic++){       // set all pins to OUPUT
-    m_mcp0.pinMode(ic, OUTPUT);  
-    m_mcp1.pinMode(ic, OUTPUT);
+  m_U1.begin_SPI(m_spi_cs,m_spi_clk,m_spi_miso,m_spi_mosi,U1_addr);  // start U1
+  m_U2.begin_SPI(m_spi_cs,m_spi_clk,m_spi_miso,m_spi_mosi,U2_addr);  // start U2
+  m_U1.enableAddrPins();               // enable HAEN function
+  m_U2.enableAddrPins();               // enable HAEN function
+  for (uint8_t ic=0; ic<16; ic++) {    // set all pins to OUPUT
+    m_U1.pinMode(ic, OUTPUT);
+    m_U2.pinMode(ic, OUTPUT); 
   }
-  // mcp23s17 devices are running, now the hdsp2112 display can be accessed 
-  Reset();  // do Reset on both hdsp2112 displays
+  // second do Reset on both hdsp2112 displays now
+  Reset(); 
 }
 
 void HDSP2112::WrData(uint8_t id, uint8_t addr, uint8_t data) {
-  m_mcp0.writeGPIOA(addr); // set address 
-  m_mcp0.writeGPIOB(data); // set data
+  m_U2.writeGPIOA(addr);   // set address 
+  m_U2.writeGPIOB(data);   // set data
   setCS(id,mod_e::low);    // cs=low
   setWR(mod_e::low);       // wr=low 
   delayMicroseconds(1);    // wr active-time req. = 100ns
@@ -56,15 +56,15 @@ void HDSP2112::WrData(uint8_t id, uint8_t addr, uint8_t data) {
 
 
 // flashbits MSB=leftmost character MSB=rightmost character 
-void HDSP2112::SetFlashBits(uint16_t flashbits) {
+void HDSP2112::SetFlashBits(uint16_t fb) {
   for(uint16_t ic=0; ic<16; ic++) { 
     uint8_t id = (ic<8)? 0:1;    // select display [left,right]
     uint8_t addr = ic&7;         // address of FLASH-Bit
-    uint16_t mask = 0x8000>>ic;  // bit pos mask
-    uint8_t data = (uint8_t) ((mask==(mask & flashbits))? 1u : 0u); 
+    uint16_t msk = 0x8000>>ic;   // bit pos mask
+    uint8_t data = (uint8_t) ((msk==(msk & fb))? 1u : 0u); 
     setFL(mod_e::low);           // FL=low
-    m_mcp0.writeGPIOA(addr);     // set address 
-    m_mcp0.writeGPIOB((uint8_t)data);  // set data
+    m_U2.writeGPIOA(addr);       // set address 
+    m_U2.writeGPIOB(data);       // set data
     setCS(id,mod_e::low);        // cs=low
     setWR(mod_e::low);           // wr=low 
     delayMicroseconds(1);        // wr active-time req. = 100ns
