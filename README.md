@@ -18,7 +18,7 @@ framework = arduino
 
 ### 1.1. wiring of the two MCP23s17 
 ---
-The two MCP23s17 can be connected to the SPI bus in parallel and with a common CS signal. Doing so, please note the following. 
+It is possible to connect multiple MCP23s17s to a SPI bus in parallel with a single CS signal only. Steps to do:   
 1. The address pins A0..A2 of the MCP23s17 must be wired so that each module has a unique address. 
 ```
 pre-assigned Address-Pins in this setup: 
@@ -26,13 +26,23 @@ device_0 (U1) address = 111 --> spi-control-byte = 0100111x
 device_1 (U2) address = 001 --> spi-control-byte = 0100001x  
 ```
 
-2. Additionally, when initializing the two MCP23s17, the `HAEN` bit (=hardware address enable) must be set within the `IOCON` register (=I/O expander configuration). 
+2. Additionally, when initializing the two MCP23s17, the `HAEN` bit (=hardware address enable) must be set within the `IOCON` register (=I/O expander configuration), i.e. call member function `enableAddrPins()`
+```c
+  m_mcp0.enableAddrPins();  // enable HAEN function
+  m_mcp1.enableAddrPins();  // enable HAEN function
+```
 
 3. The devices are selected via the **SPI control byte**  according to the pre-assigned address pins A0..A2 
-(see [mcp23s17.pdf](doc/mcp23s17.pdf) , Figure 3-5: **SPI-Control-Byte Format**, page 15)
+(see [mcp23s17.pdf](doc/mcp23s17.pdf) , Figure 3-5: **SPI-Control-Byte Format**, page 15) This is done internally, the address is set while calling the `begin_SPI()` member function, that is starting the SPI module. 
 
 
-The table shows the wiring of the SPI connections for the EPS32 and the MCP23s17
+```c  
+  m_mcp0.begin_SPI(m_spi_cs,m_spi_clk,m_spi_miso,m_spi_mosi,MCP_a0);  // start unit0
+  m_mcp1.begin_SPI(m_spi_cs,m_spi_clk,m_spi_miso,m_spi_mosi,MCP_a1);  // start unit1
+```
+
+
+The table below shows the wiring of the SPI connections for the EPS32 and the MCP23s17
 
 | ESP32-GPIO | MCP23s17 | Comment                       |
 |:----------:|:--------:|:------------------------------|
