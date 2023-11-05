@@ -15,7 +15,7 @@ constexpr int8_t SPI_miso = 19;        ///< SPI master-in-slave-out
 constexpr uint8_t U1_addr = 0b111;     ///< a2=1 a1=1 a0=1 0b111 --> 0x27
 constexpr uint8_t U2_addr = 0b001;     ///< a2=0 a1=0 a0=1 0b001 --> 0x21
 
-// m_U1.port-B works a control port for the two hdsp2112 displays
+// m_U2.port-B works a control port for the two hdsp2112 displays
 constexpr uint8_t cRES = 0b00000001;   ///< GPB0(1) = reset
 constexpr uint8_t cFL  = 0b00000010;   ///< GPB1(2) = flash-bit
 constexpr uint8_t cWR  = 0b00000100;   ///< GPB2(3) = write enable
@@ -23,13 +23,13 @@ constexpr uint8_t cRD  = 0b00001000;   ///< GPB3(4) = read enable
 constexpr uint8_t cCS0 = 0b00010000;   ///< GPB4(5) = chip select 0
 constexpr uint8_t cCS1 = 0b00100000;   ///< GPB5(6) = chip select 1
 
-// dhsp2112 control-word-register
+// hdsp2112 control-word-register
 constexpr uint8_t cwrClear    = 0b10000000;   ///< 0=normal 1=clear flash and char
 constexpr uint8_t cwrSelftest = 0b01000000;   ///< 0=normal 1=self test
 constexpr uint8_t cwrBlink    = 0b00010000;   ///< 0=off 1=blinking
 constexpr uint8_t cwrFlash    = 0b00001000;   ///< 0=off 1=flashing
 
-// hdsp2112 address-range for internal RAMs: Flash,User-defined,Control and Character-RAM
+// hdsp2112 address for Flash,User-defined,Control and Character-RAM
 constexpr uint8_t adrFLR=0b00011000;   ///< hdsp2112 Flash-RAM address
 constexpr uint8_t adrUDA=0b00100000;   ///< hdsp2112 User-Defined-Address address
 constexpr uint8_t adrUDR=0b00101000;   ///< hdsp2112 User-Defined-RAM address
@@ -42,8 +42,8 @@ enum class mod_e { low=0, high=1 };    ///< logic level of signals
 
 class HDSP2112 : public Print {
   private:
-    Adafruit_MCP23X17 m_U1;   ///< mcs23s17 (U1_addr) GBB[0..4]=[res,fl,wr,rd,cs0,cs1]
-    Adafruit_MCP23X17 m_U2;   ///< mcs23s17 (U2_addr) GPA[0..7]=data[0..7] GBB[0..4]=address[0..4]
+    Adafruit_MCP23X17 m_U1;   ///< mcs23s17 (U1_addr) GPA[0..7]=data[0..7] GBB[0..4]=address[0..4]
+    Adafruit_MCP23X17 m_U2;   ///< mcs23s17 (U2_addr) GBB[0..4]=[res,fl,wr,rd,cs0,cs1]
     int8_t m_spi_cs;          ///< SPI chip-select
     int8_t m_spi_clk;         ///< SPI clock
     int8_t m_spi_mosi;        ///< SPI master-out-clock-in
@@ -148,21 +148,21 @@ class HDSP2112 : public Print {
       } else {
         m_ctrl |= (0==id)? cCS0 : cCS1;
       }
-      m_U1.writeGPIOB(m_ctrl);
+      m_U2.writeGPIOB(m_ctrl);
     }
 
     // sets fl input of given hdsp2112 display to [low,high]
     // @param mod [low,high]
     inline void setFL(mod_e mod) {
       m_ctrl = (mod==mod_e::low) ? (m_ctrl & ~cFL) : (m_ctrl | cFL);
-      m_U1.writeGPIOB(m_ctrl);
+      m_U2.writeGPIOB(m_ctrl);
     }
 
     // control write_enable input of all hdsp2112 displays
     // @param mod [low,high]
     inline void setWR(mod_e mod) {
       m_ctrl = (mod==mod_e::low) ? (m_ctrl & ~cWR) : (m_ctrl | cWR);
-      m_U1.writeGPIOB(m_ctrl);
+      m_U2.writeGPIOB(m_ctrl);
     }
 
     // write data to given hdsp2112 display

@@ -22,10 +22,10 @@ HDSP2112::HDSP2112(int8_t spi_cs, int8_t spi_clk, int8_t spi_mosi, int8_t spi_mi
 
 void HDSP2112::Reset(void) {
   m_ctrl = m_ctrl & ~cRES & ~cCS0 & ~cCS1; 
-  m_U1.writeGPIOB(m_ctrl);    // reset + both cs activated
+  m_U2.writeGPIOB(m_ctrl);    // reset + both cs activated
   delayMicroseconds(10);      // wait pulse width (req. =300ns) 
   m_ctrl |= cRES|cCS0|cCS1;   
-  m_U1.writeGPIOB(m_ctrl);    // reset + both cs deactivated
+  m_U2.writeGPIOB(m_ctrl);    // reset + both cs deactivated
   delay(1);                   // wait 1ms until device is ready after reset (req. =110µs) 
   SetPos(0);                  // set cursor to leftmost position
 }
@@ -45,8 +45,8 @@ void HDSP2112::Begin(void) {
 }
 
 void HDSP2112::WrData(uint8_t id, uint8_t addr, uint8_t data) {
-  m_U2.writeGPIOA(addr);   // set address 
-  m_U2.writeGPIOB(data);   // set data
+  m_U1.writeGPIOA(addr);   // set address 
+  m_U1.writeGPIOB(data);   // set data
   setCS(id,mod_e::low);    // cs=low
   setWR(mod_e::low);       // wr=low 
   delayMicroseconds(1);    // wr active-time req. = 100ns
@@ -63,8 +63,8 @@ void HDSP2112::SetFlashBits(uint16_t fb) {
     uint16_t msk = 0x8000>>ic;   // bit pos mask
     uint8_t data = (uint8_t) ((msk==(msk & fb))? 1u : 0u); 
     setFL(mod_e::low);           // FL=low
-    m_U2.writeGPIOA(addr);       // set address 
-    m_U2.writeGPIOB(data);       // set data
+    m_U1.writeGPIOA(addr);       // set address 
+    m_U1.writeGPIOB(data);       // set data
     setCS(id,mod_e::low);        // cs=low
     setWR(mod_e::low);           // wr=low 
     delayMicroseconds(1);        // wr active-time req. = 100ns
