@@ -12,8 +12,8 @@ constexpr int8_t SPI_mosi = 23;        ///< SPI master-out-slave-in
 constexpr int8_t SPI_miso = 19;        ///< SPI master-in-slave-out
 
 // two mcp23s17 devices are connected in parallel and are accessed via addresses a[2..0]
-constexpr uint8_t U1_addr = 0b111;     ///< a2=1 a1=1 a0=1 0b111 --> 0x27
-constexpr uint8_t U2_addr = 0b001;     ///< a2=0 a1=0 a0=1 0b001 --> 0x21
+constexpr uint8_t U1_addr = 0b001;     ///< a2=1 a1=1 a0=1 0b001 --> 0x21
+constexpr uint8_t U2_addr = 0b111;     ///< a2=0 a1=0 a0=1 0b111 --> 0x27
 
 // m_U2.port-B works a control port for the two hdsp2112 displays
 constexpr uint8_t cRES = 0b00000001;   ///< GPB0(1) = reset
