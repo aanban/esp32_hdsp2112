@@ -17,7 +17,6 @@ framework = arduino
 ![schematic](doc/mcp23s17__hdsp2112.png)
 
 ## 1.1. Wiring of the two MCP23s17 
----
 The data sheet states that it is possible to connect multiple MCP23s17s to a SPI bus in parallel with a single CS signal only. Follow these steps:
 ### 1.1.1. Pre-assign address pins A0..A2
 Each MCP23s17 module requires a unique address, that is done with the wiring of the address pins A[0..2]. The pre-assigned address pins in this setup are:
@@ -59,7 +58,6 @@ The table below shows the wiring of the SPI connections for the ESP32 and the MC
 
 
 ## 1.3. Wiring of the two HDSP-2112 displays
----
 The HDSP-2112 displays are connected in parallel, and each is selected via its own chip-select signal (`CS_0`, `CS_1`)
 
 To get a proper flashing function, the displays were wired so that the left display generates the clock for the right display. ``Left SEL=3.3V`` , ``Right SEL=GND`` 
@@ -91,7 +89,6 @@ Some member functions as follows
  - `printf()` works link standard printf for printing strings
   
    
----
 > [!NOTE]
 >The Selftest() function itself works, however reading the status-bit and showing `OK` or `Failed` is on the 
 todo-list. Reading means: change the `m_U2.pinMode()` from OUTPUT to INPUT and set RD signal for the MCP23s17 accordingly
