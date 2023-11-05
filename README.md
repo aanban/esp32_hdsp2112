@@ -19,7 +19,7 @@ framework = arduino
 ## 1.1. Wiring of the two MCP23s17 
 ---
 The data sheet states that it is possible to connect multiple MCP23s17s to a SPI bus in parallel with a single CS signal only. Follow these steps:
-### 1.1.1 Pre-assign address pins A0..A2
+### 1.1.1. Pre-assign address pins A0..A2
 Each MCP23s17 module requires a unique address, that is done with the wiring of the address pins A[0..2]. The pre-assigned address pins in this setup are:
 
 | device | A0 | A1 | A2 | SPI-control | Comment                    |
@@ -37,9 +37,9 @@ When initializing the two MCP23s17, the `HAEN` bit (=hardware address enable) mu
 ### 1.1.3. Select the MCP23s17 devices via SPI-control-byte
 The devices are selected via the **SPI control byte**  according to the pre-assigned address pins A0..A2
 
->see [mcp23s17.pdf](doc/mcp23s17.pdf) , Figure 3-5: **SPI-Control-Byte Format**, page 15 
+> see [mcp23s17.pdf](doc/mcp23s17.pdf) , Figure 3-5: **SPI-Control-Byte Format**, page 15 
 
-This is handled within the driver. The specific addresses are set during initialization of the SPI-bus within the `begin_SPI()` member function.
+This is automatically handled within the driver. The specific addresses are set during initialization of the SPI-bus within the `begin_SPI()` member function.
 
 ```cpp  
   m_U1.begin_SPI(m_spi_cs,m_spi_clk,m_spi_miso,m_spi_mosi,U1_addr);
@@ -60,16 +60,15 @@ The table below shows the wiring of the SPI connections for the ESP32 and the MC
 
 ## 1.3. Wiring of the two HDSP-2112 displays
 ---
-The HDSP-2112 displays are connected in parallel, each is selected via its own chip-select signal
+The HDSP-2112 displays are connected in parallel, and each is selected via its own chip-select signal (`CS_0`, `CS_1`)
 
-For a proper flashing function, the displays were wired so that the left display generates the clock for the right display. ``Left SEL=3.3V`` , ``Right SEL=GND`` 
+To get a proper flashing function, the displays were wired so that the left display generates the clock for the right display. ``Left SEL=3.3V`` , ``Right SEL=GND`` 
 
 >See specification [hp_HDSP-2112.pdf](doc/hp_HDSP-2112.pdf) page 9:  *clock-select* (**CLS** pin 11) and *clock-input/output* (**CLK**  pin 12) 
 
----
+
 > [!NOTE]
 > The recommended supply voltage is [4.5V to 5.5V]. The circuit used here, operates the displays with 3.3V, which remains within the abs. maximum range [-0.3V to 7.0V] of the data sheet. Even with 3.3V the displays work reliably and are shining bright. Using 3.3V has the advantage that the MCP23s17 can be connected directly to the ESP32, i.e. no level shifters are required.
----
 
 
 
