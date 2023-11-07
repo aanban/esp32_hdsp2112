@@ -23,8 +23,8 @@ Each MCP23s17 module requires a unique address, that is done with the wiring of 
 
 | device | A0 | A1 | A2 | SPI-control | Comment                    |
 |:------:|:--:|:--:|:--:|:-----------:|:---------------------------|
-| U1     |  1 |  1 |  1 | 01000111x   | GPA=d[0..7], GPB=a[0..4]   |
-| U2     |  0 |  0 |  1 | 01000001x   | GPB=[res,fl,wr,rd,cs0,cs1] |
+| U1     |  0 |  0 |  1 | 01000001x   | GPA=d[0..7], GPB=a[0..4]   |
+| U2     |  1 |  1 |  1 | 01000111x   | GPB=[res,fl,wr,rd,cs0,cs1] |
 
 
 ### 1.1.2. Activate HAEN bit (hardware-address-enable) in IOCON register
