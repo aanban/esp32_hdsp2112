@@ -60,7 +60,12 @@ The table below shows the wiring of the SPI connections for the ESP32 and the MC
 ## 1.3. Wiring the HDSP-2112 displays
 The HDSP-2112 displays are connected in parallel, and each is selected via its own chip-select signal (`CS_0`, `CS_1`)
 
-To get a proper flashing function, the displays were wired so that the left display generates the clock `FLASH_CLK` for the right display. `U3:SEL=3.3V` , `U4:SEL=GND` 
+To get a proper flashing function, the displays were wired (`SEL` pin 11) so that the left display generates the clock `FLASH_CLK` for the right display. 
+
+|   |  clock select| comment |
+|:-:|:----:|:---|
+| U3.11| 3.3V |CLK (pin 12) work as output of flash-clock |
+| U4.11| GND  | CLK (pin 12) work as input 
 
 >See specification [hp_HDSP-2112.pdf](doc/hp_HDSP-2112.pdf) page 9:  *clock-select* (**CLS** pin 11) and *clock-input/output* (**CLK**  pin 12) 
 
