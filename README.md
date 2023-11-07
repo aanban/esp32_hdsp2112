@@ -62,10 +62,10 @@ The HDSP-2112 displays are connected in parallel, and each is selected via its o
 
 To get a proper flashing function, the displays were wired (`SEL` pin 11) so that the left display generates the clock `FLASH_CLK` for the right display. 
 
-|   |  clock select| comment |
+| CLK (Pin 11) | level | comment |
 |:-:|:----:|:---|
-| U3.11| 3.3V |CLK (pin 12) work as output of flash-clock |
-| U4.11| GND  | CLK (pin 12) work as input 
+| U3| 3.3V |CLK (pin 12) work as output of flash-clock |
+| U4| GND  | CLK (pin 12) work as input 
 
 >See specification [hp_HDSP-2112.pdf](doc/hp_HDSP-2112.pdf) page 9:  *clock-select* (**CLS** pin 11) and *clock-input/output* (**CLK**  pin 12) 
 
