@@ -16,8 +16,8 @@ framework = arduino
 
 ![schematic](doc/mcp23s17__hdsp2112.png)
 
-## 1.1. Wiring of the two MCP23s17 
-The data sheet states that it is possible to connect multiple MCP23s17s to a SPI bus in parallel with a single CS signal only. Follow these steps:
+## 1.1. Wiring of multiple MCP23s17 
+The data sheet states that it is possible to connect multiple MCP23s17s to a SPI bus in parallel with one single CS signal only. Follow these steps:
 ### 1.1.1. Pre-assign address pins A0..A2
 Each MCP23s17 module requires a unique address, that is done with the wiring of the address pins A[0..2]. The pre-assigned address pins in this setup are:
 
@@ -51,16 +51,16 @@ The table below shows the wiring of the SPI connections for the ESP32 and the MC
 
 | ESP32-GPIO | MCP23s17 U1 | MCP23s17 U2 | Comment                       |
 |:----------:|:-----------:|:-----------:|:------------------------------|
-| 05         | 11          | 11          | SPI_CS,  chip-select          |
-| 18         | 12          | 12          | SPI_CLK, clock                |
-| 23         | 13          | 13          | SPI_MOSI, master-out-slave-in |
-| 19         | 14          | 14          | SPI_MISO, master-in-slave-out |
+| 05         | 11          | 11          | SPI_CS,  VSPI chip-select          |
+| 18         | 12          | 12          | SPI_CLK, VSPI clock                |
+| 23         | 13          | 13          | SPI_MOSI, VSPI master-out-slave-in |
+| 19         | 14          | 14          | SPI_MISO, VSPI master-in-slave-out |
 
 
-## 1.3. Wiring of the two HDSP-2112 displays
+## 1.3. Wiring the HDSP-2112 displays
 The HDSP-2112 displays are connected in parallel, and each is selected via its own chip-select signal (`CS_0`, `CS_1`)
 
-To get a proper flashing function, the displays were wired so that the left display generates the clock for the right display. ``Left SEL=3.3V`` , ``Right SEL=GND`` 
+To get a proper flashing function, the displays were wired so that the left display generates the clock `FLASH_CLK` for the right display. `U3:SEL=3.3V` , `U4:SEL=GND` 
 
 >See specification [hp_HDSP-2112.pdf](doc/hp_HDSP-2112.pdf) page 9:  *clock-select* (**CLS** pin 11) and *clock-input/output* (**CLK**  pin 12) 
 
@@ -75,7 +75,7 @@ To get a proper flashing function, the displays were wired so that the left disp
 The [Adafruit-MCP23017-Arduino-Library](https://github.com/adafruit/Adafruit-MCP23017-Arduino-Library) is used to control the MCP23s17 port expander
 
 ## 2.2. Parent Class
-The class `HDSP2112` is derived from the class `Print` , so the member functions like `printf()` can be used easily  
+The class `HDSP2112` is derived from the class `Print` , so the member functions like `printf()` can be used easily. 
 
 ## 2.3. Useful member functions
 Some member functions as follows
