@@ -37,6 +37,7 @@ constexpr uint8_t adrCWR=0b00110000;   ///< hdsp2112 Control-Word-Register addre
 constexpr uint8_t adrCHR=0b00111000;   ///< hdsp2112 character-RAM address
 
 constexpr uint8_t maxPOS  = 16;        ///< two hdsp2112 displays with 8 chars each
+constexpr int32_t maxTXT  = 256;       ///< buffersize of text buffer
 
 enum class mod_e { low=0, high=1 };    ///< logic level of signals
 
@@ -51,7 +52,12 @@ class HDSP2112 : public Print {
     uint8_t m_ctrl;           ///< hdsp2112 control byte --> GBB[0..4]: [RES,FL,WE,CS0,CS1]
     uint8_t m_cwr;            ///< hdsp2112 control-word-register [clear, selftest, blink, flash, bright(3)]
     uint8_t m_pos;            ///< current cursor position 
-    
+    uint8_t m_scroll_mode;    ///< 0=srcolling-off 1=scrolling-on
+    uint32_t m_srcoll_period; ///< millisecond between srolls
+    uint32_t m_srcoll_ts_pre; ///< timestamp previous scroll
+    uint32_t m_pos_txt;       ///< position within text
+    uint32_t m_len_txt;       ///< string length
+    char m_txt[maxTXT];       ///< text to scroll
 
   public:
     // constructor
@@ -129,6 +135,14 @@ class HDSP2112 : public Print {
       WrData(1, adrCWR,m_cwr);
     }
 
+    // set scroll mode
+    // @param mode [0=off, 1=on]
+    inline void ScrollMode(uint8_t mode) { m_scroll_mode=mode;  }
+
+    // set scroll speed
+    // @param period time in ms between updates
+    inline void ScrollPeriod(uint32_t period) { m_srcoll_period = period; }
+
     // set the cursor postion
     // @param pos the new cursor position 
     inline void SetPos(uint8_t pos) { m_pos=(pos<maxPOS)? pos : maxPOS-1; }
@@ -136,6 +150,8 @@ class HDSP2112 : public Print {
     // gets the cursor postion
     // @return current cursor postion m_cur
     inline uint8_t GetPos(void) { return m_pos; }
+
+    void Loop(void);
 
   protected:
 
@@ -164,6 +180,11 @@ class HDSP2112 : public Print {
       m_ctrl = (mod==mod_e::low) ? (m_ctrl & ~cWR) : (m_ctrl | cWR);
       m_U2.writeGPIOB(m_ctrl);
     }
+    
+    // scroll text
+    // - copy buffer to display  
+    // - prepare m_pos_txt for next scroll
+    void ScrollText(void);
 
     // write data to given hdsp2112 display
     // @param id    hdsp2112 identifier [0..1]

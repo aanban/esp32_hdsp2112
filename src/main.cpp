@@ -10,6 +10,8 @@ HDSP2112 d(s_cs,s_clk,s_mosi,s_miso); // create instance with user defined SPI
 ///< standard SPI interface 
 // HDSP2112 d;    // create default instance
 
+constexpr uint32_t scrollPERIOD = 300; 
+
 // testing Character RAM, loop all internal characters and values
 void testChars(void) {
   d.Reset();
@@ -76,14 +78,20 @@ void doSelftest(void) {
 void setup() {
   d.Begin();
   d.SetBrightness(4);
+  d.ScrollMode(0);
   d.printf("Hdsp2112-Display");
   delay(2000);
   doSelftest();
-}
-
-void loop() {
   testChars();
   testFlashing();
   testBlinking();
   testBrightness();
+  d.ScrollMode(1);
+  d.SetBrightness(4);
+  d.ScrollPeriod(scrollPERIOD);
+  d.printf("Scrolling with period=%u and a very long text and repeat it forever", scrollPERIOD);
+}
+
+void loop() {
+  d.Loop(); // keep scrolling
 }
