@@ -92,13 +92,18 @@ Some member functions as follows
  - `Selftest()` performs a selftest 
  - `WriteChar()` prints a given character
  - `printf()` works link standard printf for printing strings
-  
-   
-> [!NOTE]
->The Selftest() function itself works, however reading the status-bit and showing `OK` or `Failed` is on the 
-todo-list. Reading means: change the `m_U2.pinMode()` from OUTPUT to INPUT and set RD signal for the MCP23s17 accordingly
+ - `SetUdcFont()` set 16 user defined chars 
 
-## 2.4. Basic example
+## 2.4. utf8 handling
+Some utf8 characters can be mapped to the internal character map, that is handled by the member function UTF8_to_HDSP(), e.g. `Ä` is mapped to `0x15` or `alpha` is mapped to `0x05`
+
+## 2.5. Selftest() function
+The HDSP2112 self test is activated by setting `cwrTEST=1` within the control-word-register. The datasheet states that the procecdure needs about 4 sec, I set the wait time to 7sec. Afterwards the `cwrTSTOK` bit of the control-word-register indicates the status of the test. `cwrTSTOK=1` means that the test was `OK` else it `Failed`. Reading from the HDSP2121 means: change the MCP23s17's `m_U1.pinMode()` of the from OUTPUT to INPUT and set RD signal for the displays accordingly.
+
+> [!NOTE]
+> During the tests I found out that a Reset() must be called after the Selftest() function, in order to avoid a strange behaviour of the BlinkMode and FlashMode functions. 
+
+## 2.6. Basic example
 The following main.cpp shows a basic example:
 
 ```cpp
