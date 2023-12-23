@@ -12,7 +12,7 @@ HDSP2112 d(s_cs,s_clk,s_mosi,s_miso); // create instance with user defined SPI
 // HDSP2112 d;    // create default instance with SPI instance from SPI.h
 
 
-// reset display, print title, and wait a second
+// reset and clear display, print title, and wait a second
 // @param title text to print
 inline void testTitle(const char* title){
   d.Reset();
@@ -22,7 +22,7 @@ inline void testTitle(const char* title){
   delay(1000);
 }
 
-// testing Character RAM, loop all internal characters and values
+// Character RAM, loop all internal characters and values
 void testCharRam(void) {
   testTitle("testCharRAM");
   for(uint8_t ch=0; ch<144; ch++) {
@@ -38,7 +38,7 @@ void testCharRam(void) {
   d.clear();
 }
 
-// testing Brightness, loop brightness between 0=100% and 6=13%
+// Brightness, loop brightness between 0=100% and 6=13%
 void testBrightness(void) {
   uint8_t bn_p[8] = { 100u,80u,53u,40u,27u,20u,13u,0u };
   testTitle("testBrightness  ");
@@ -50,7 +50,7 @@ void testBrightness(void) {
   d.SetBrightness(4);
 }
 
-// test Flashing Mode, flash different positions
+// Flashing Mode, set flash bits at different positions
 void testFlashingText(void) {
   testTitle("testFlashingText");
   d.FlashMode(1);
@@ -63,7 +63,7 @@ void testFlashingText(void) {
   d.clear();
 }
 
-// test Blinking Mode, both display will blink synchronous
+// Blinking Mode, both display will blink synchronous
 void testBlinkingText(void) {
   testTitle("BlinkingText=OFF");
   d.BlinkMode(0);
@@ -77,18 +77,20 @@ void testBlinkingText(void) {
   d.clear();
 }
 
-// starts built-in self-test for left and right display
+// call built-in self-test for both displays individually 
 void doSelftest(void) {
   uint8_t res=0; 
   testTitle("self-test left  ");
   d.clear();
-  d.WriteText(8," <--Test");
+  d.WriteChar(10,tLeft);
+  d.WriteText(12,"Test");
   res=d.Selftest(0); // self-test left display
   d.WriteText(12,"%4s",((1==res)? "OK":"FAIL"));
   delay(2000);  
   testTitle("self-test right "); 
   d.clear();
-  d.WriteText(0,"Test--> ");
+  d.WriteText(0,"Test");
+  d.WriteChar(6,tRight);
   res=d.Selftest(1); // self-test right display
   d.WriteText(0,"%-4s",((1==res)? "OK":"FAIL"));
   delay(2000);
@@ -102,8 +104,8 @@ const char* utf8_str[n_utf8] = {     // utf8 strings for testing
   "π","λ","η","θ","τ","Γ","Φ"
 };
 
-// tests utf8 strings, internally the function UTF8_to_HDSP() maps 
-// the utf8 characters to the internal character-RAM location [0..31]
+// UTF8 strings, internally the function UTF8_to_HDSP() maps 
+// the UTF8 characters to the internal character-RAM location [0..31]
 void testUtf8String(void){
   testTitle("test UTF8-string"); 
   d.clear(); 
@@ -118,27 +120,27 @@ void testUtf8String(void){
 }
 
 // propellors
-constexpr uint8_t prop0[4]={'|','/','-','\\'};
-constexpr uint8_t prop1[8]={128,129,130,131,132,133,134,135};
-constexpr uint8_t prop2[4]={128,129,130,131};
-constexpr uint8_t prop3[4]={aUp,aRight,aDown,aLeft};
+constexpr uint8_t prop0[4] ={'|','/','-','\\'};
+constexpr uint8_t prop1[8] ={128,129,130,131,132,133,134,135};
+constexpr uint8_t prop2[4] ={128,129,130,131};
+constexpr uint8_t prop3[4] ={aUp,aRight,aDown,aLeft};
+constexpr uint8_t prop4[8] ={139,140,141,142,143,142,141,140};
+constexpr uint8_t prop5[12]={132,133,134,135,136,137,138,137,136,135,134,133};
 // wipers
 constexpr uint8_t wipe1[7]={132,133,134,135,136,137,138};
 constexpr uint8_t wipe0[5]={139,140,141,142,143};
 // arrows
 constexpr uint8_t arro0[3]={tLeft,tBar,tBar};
 constexpr uint8_t arro1[3]={tBar,tBar,tRight};
-constexpr uint8_t arro2[3]={tLeft,'-','-'};
-constexpr uint8_t arro3[3]={'-','-',tRight};
-constexpr uint8_t arro4[3]={aLeft,'-','-'};
-constexpr uint8_t arro5[3]={'-','-',aRight};
+constexpr uint8_t arro2[2]={aLeft,'-'};
+constexpr uint8_t arro3[2]={'-',aRight};
 
 // animated wipe out chars
 // @param alpha  character set for wipe animation
 // @param size   number of characters
 // @param speed  delay between char changes
-void wiper(const uint8_t *alpha, uint8_t size, uint32_t speed) {
-  for(uint8_t ic=0; ic<maxPOS; ic++) {
+void wiper(const uint8_t *alpha, size_t size, uint8_t start, uint8_t end, uint32_t speed) {
+  for(uint8_t ic=start; ic<=end; ic++) {
     for(uint8_t jc=0; jc<size; jc++) {
       d.WriteChar(ic,alpha[jc]);
       delay(speed);
@@ -152,7 +154,7 @@ void wiper(const uint8_t *alpha, uint8_t size, uint32_t speed) {
 // @param size  number of characters
 // @param pos   position within display
 // @param del   delay after drawing
-void arrow(const uint8_t *alpha, uint8_t size, uint8_t pos, uint32_t del) {
+void arrow(const uint8_t *alpha, size_t size, uint8_t pos, uint32_t del) {
   d.SetPos(pos); 
   for(uint8_t ic=0;ic<size;ic++) {
     d.WriteChar(alpha[ic]);
@@ -166,7 +168,7 @@ void arrow(const uint8_t *alpha, uint8_t size, uint8_t pos, uint32_t del) {
 // @param pos    position within display
 // @param repeat number of repeats
 // @param speed  delay between char changes
-void prope(const uint8_t *alpha, uint8_t size, uint8_t pos, uint8_t repeat, uint32_t speed) {
+void prope(const uint8_t *alpha, size_t size, uint8_t pos, uint8_t repeat, uint32_t speed) {
   for(uint8_t ic=0;ic<repeat;ic++) {
     for(uint8_t jc=0;jc<size;jc++) {
       d.WriteChar(pos,alpha[jc]); 
@@ -175,33 +177,30 @@ void prope(const uint8_t *alpha, uint8_t size, uint8_t pos, uint8_t repeat, uint
   }
 }
 
-// test user defined fonts
+// user defined char font
 void testUDC(void){
   testTitle("UDC_font");
-  prope(prop0,4,10,5,150);
-  prope(prop1,8,10,5,150);
-  prope(prop3,4,10,2,1000);
-  arrow(arro0,3,10,2000);
-  arrow(arro1,3,10,2000);
-  arrow(arro2,3,10,2000);
-  arrow(arro3,3,10,2000);
-  arrow(arro4,3,10,2000);
-  arrow(arro5,3,10,2000);
+  prope(prop0,sizeof(prop0),10,5,150);
+  prope(prop1,sizeof(prop1),10,5,150);
+  prope(prop3,sizeof(prop3),10,2,1000);
+  arrow(arro0,sizeof(arro0),10,2000);
+  arrow(arro1,sizeof(arro1),10,2000);
+  testTitle("UDC_font");
+  arrow(arro2,sizeof(arro2),10,2000);
+  arrow(arro3,sizeof(arro3),10,2000);
 }
 
-// test second user defined font with wipe 
+// second user defined font with wipe chars
 void testUDCwipe(void){
   d.SetUdcFont(UDC_wipe,UDC_nch);  // init wipe user defined characters
   testTitle("UDC_wipe");
-  prope(prop2,4,10,8,250);
+  prope(prop2,sizeof(prop2),10,8,250);
+  prope(prop4,sizeof(prop4),10,8,80);
+  prope(prop5,sizeof(prop5),10,8,80);
   d.clear(); 
-  d.printf("UDC_wipe--tester"); 
-  wiper(wipe0,5,50); 
-  delay(1000);
-  d.clear(); 
-  d.printf("UDC_wipe--tester"); 
-  wiper(wipe1,7,50); 
-  delay(1000);
+  d.printf("TextTextTextText"); 
+  wiper(wipe0,sizeof(wipe0),0, 7,50); 
+  wiper(wipe1,sizeof(wipe1),8,15,50); 
   d.SetUdcFont(UDC_font,UDC_nch); // init standard user defined characters
 }
 
@@ -214,12 +213,12 @@ void testUDCwipe(void){
 }
 
 void loop() {
-  testUDC();
-  testUDCwipe();
-  testUtf8String();
-  testFlashingText();
+  doSelftest();
   testCharRam();
+  testUtf8String();
+  testUDCwipe();
+  testUDC();
+  testFlashingText();
   testBlinkingText();
   testBrightness();
-  doSelftest();
 }
