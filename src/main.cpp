@@ -54,11 +54,9 @@ void testBrightness(void) {
 void testFlashingText(void) {
   testTitle("testFlashingText");
   d.FlashMode(1);
-  d.SetFlashBits(0b1100000000000011);delay(5000);
-  d.SetFlashBits(0b0111000000001110);delay(5000);
-  d.SetFlashBits(0b0001110000111000);delay(5000);
-  d.SetFlashBits(0b0000011111100000);delay(5000);
-  d.SetFlashBits(0b0000000110000000);delay(5000);
+  d.SetFlashBits(0b1111000000000000);delay(5000);
+  d.SetFlashBits(0b0000111111110000);delay(5000);
+  d.SetFlashBits(0b0000000000001111);delay(5000);
   d.FlashMode(0);
   d.clear();
 }
