@@ -41,8 +41,6 @@ constexpr uint8_t maxPOS   = 16;          // two hdsp2112 displays with 8 chars 
 constexpr uint8_t utf8Ascii=128;          // ascii chars 
 constexpr uint8_t utf8chUDC=utf8Ascii+16; // user defined chars
 
-enum class mod_e { low=0, high=1 };       // logic level of signals
-
 class HDSP2112 : public Print {
   private:
     Adafruit_MCP23X17 m_U1;   // mcs23s17 (U1_addr) GPA[0..7]=data[0..7] GBB[0..4]=address[0..4]
@@ -86,16 +84,30 @@ class HDSP2112 : public Print {
     // @param ch charcter to be printed
     void WriteChar(char ch);
 
+    // prints character ch to given position pos
+    // select left or right display, 
+    // set m_pos to pos
+    // print char ch to m_pos,
+    // increment m_spi_miso
+    // @param pos  position within display
+    // @param ch   charcter to be printed
+    void WriteChar(const uint8_t pos, char ch);
+
+    // set position within display and print formated text
+    // @param pos    position to set
+    // @param format printf style format string
+    // @param ...    variable parameters
+    size_t WriteText(const uint8_t pos, const char *format, ...);
+
     // start selftest cwrTEST=1, wait 6 sec, stop selftest cwrTEST=0, 
     // read back controll-word-register, and check cwrTSTOK[0=failed, 1=OK]
-    // @param display id [0=left, 1=right]
+    // @param hid hdsp2112 identifier [0=left, 1=right]
     // @return test result [0=failed, 1=OK]
-    uint8_t Selftest(uint8_t id);
+    uint8_t Selftest(uint8_t hid);
 
-    // clear Display, fill all chars with blanks
+    // clear Display, fill all chars with blanks, set m_pos=0
     inline void clear(void){ 
-      SetPos(0); 
-      printf("                "); 
+      WriteText(0,"                "); 
       SetPos(0);
       delay(20);
     }
@@ -113,8 +125,8 @@ class HDSP2112 : public Print {
     }
     
     // set Flash-Bits, each bit belongs to one char posision of left and 
-    // right display 
-    // @param flashbits [1=flash, 0=permanently on]
+    // right display, arrangement flashbits MSB=leftmost character MSB=rightmost character 
+    // @param flashbits [0=permanently on, 1=flash]
     void SetFlashBits(uint16_t flashbits);
 
     // set flash-Mode, the Flash-Bits have to be set before, 
@@ -161,21 +173,21 @@ class HDSP2112 : public Print {
   protected:
 
     // sets chip_select input of given hdsp2112 display to [low,high]
-    // @param id  hdsp2112 identifier [0=left, 1=right]
-    // @param mod [low,high]
-    inline void setCS(uint8_t id, mod_e mod) {
-      if(mod==mod_e::low) {
-        m_ctrl &= (0==id)? ~gpbCS0 : ~gpbCS1;
+    // @param mod [0=low,1=high]
+    // @param hid hdsp2112 identifier [0=left, 1=right]
+    inline void setCS(uint8_t mod, uint8_t hid) {
+      if(mod==0) {
+        m_ctrl &= (0==hid)? ~gpbCS0 : ~gpbCS1;
       } else {
-        m_ctrl |= (0==id)?  gpbCS0 :  gpbCS1;
+        m_ctrl |= (0==hid)?  gpbCS0 :  gpbCS1;
       }
       m_U2.writeGPIOB(m_ctrl);
     }
 
     // sets chip_select input of both hdsp2112 displays to [low,high]
-    // @param mod [low,high]
-    inline void setCS(mod_e mod) {
-      if(mod==mod_e::low) {
+    // @param mod [0=low,1=high]
+    inline void setCS(uint8_t mod) {
+      if(mod==0) {
         m_ctrl &= ~gpbCS0 & ~gpbCS1;
       } else {
         m_ctrl |=  gpbCS0 |  gpbCS1;
@@ -184,31 +196,31 @@ class HDSP2112 : public Print {
     }
 
     // sets fl input of both displays to [low,high]
-    // @param mod [low,high]
-    inline void setFL(mod_e mod) {
-      m_ctrl = (mod==mod_e::low) ? (m_ctrl & ~gpbFL) : (m_ctrl | gpbFL);
+    // @param mod [0=low,1=high]
+    inline void setFL(uint8_t mod) {
+      m_ctrl = (mod==0) ? (m_ctrl & ~gpbFL) : (m_ctrl | gpbFL);
       m_U2.writeGPIOB(m_ctrl);
     }
 
     // control write_enable input of both displays
-    // @param mod [low,high]
-    inline void setWR(mod_e mod) {
-      m_ctrl = (mod==mod_e::low) ? (m_ctrl & ~gpbWR) : (m_ctrl | gpbWR);
+    // @param mod [0=low,1=high]
+    inline void setWR(uint8_t mod) {
+      m_ctrl = (mod==0) ? (m_ctrl & ~gpbWR) : (m_ctrl | gpbWR);
       m_U2.writeGPIOB(m_ctrl);
     }
 
     // control read_enable input of both displays
-    // @param mod [low,high]
-    inline void setRD(mod_e mod) {
-      m_ctrl = (mod==mod_e::low) ? (m_ctrl & ~gpbRD) : (m_ctrl | gpbRD);
+    // @param mod [0=low,1=high]
+    inline void setRD(uint8_t mod) {
+      m_ctrl = (mod==0) ? (m_ctrl & ~gpbRD) : (m_ctrl | gpbRD);
       m_U2.writeGPIOB(m_ctrl);
     }
 
     // Writes data to given hdsp2112 display
-    // @param id    hdsp2112 identifier [0=left,1=right]
     // @param addr  address to write
     // @param data  data to write
-    void WrData(uint8_t addr, uint8_t data, uint8_t id);
+    // @param hid   hdsp2112 identifier [0=left,1=right]
+    void WrData(uint8_t addr, uint8_t data, uint8_t hid);
 
     // Writes data to both hdsp2112 display
     // @param addr  address to write
@@ -228,10 +240,10 @@ class HDSP2112 : public Print {
     // Reads data from given hdsp2112 display.
     // Internally first DataDirection(INPUT) is called to set the MCP23s17 to "read-mode" 
     // and after reading the data, DataDirection(OUPUT) is called to set the MCP23s17 to normal "write-mode" again. 
-    // @param id    hdsp2112 identifier [0..1]
     // @param addr  address to write
+    // @param hid   hdsp2112 identifier [0..1]
     // @return data from device
-    uint8_t RdData(uint8_t id, uint8_t addr);
+    uint8_t RdData(uint8_t addr,uint8_t hid);
 
 
     // ------------------------------------------------------------------------

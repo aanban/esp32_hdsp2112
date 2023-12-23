@@ -44,55 +44,54 @@ void HDSP2112::Begin(void) {
   Reset(); // reset both displays after SPI is working and MCP23s17 are ready
 }
 
-void HDSP2112::WrData(uint8_t addr, uint8_t data, uint8_t id) {
+void HDSP2112::WrData(uint8_t addr, uint8_t data, uint8_t hid) {
   m_U1.writeGPIOA(addr);   // set address 
   m_U1.writeGPIOB(data);   // set data
-  setCS(id,mod_e::low);    // cs=low
-  setWR(mod_e::low);       // wr=low 
+  setCS(0,hid);            // cs=low
+  setWR(0);                // wr=low 
   delayMicroseconds(1);    // wr active-time req.=100ns
-  setWR(mod_e::high);      // wr=high
-  setCS(id,mod_e::high);   // cs=high
+  setWR(1);                // wr=high
+  setCS(1,hid);            // cs=high
 }
 
 void HDSP2112::WrData(uint8_t addr, uint8_t data) {
   m_U1.writeGPIOA(addr);   // set address 
   m_U1.writeGPIOB(data);   // set data
-  setCS(mod_e::low);       // cs=low (all displays)
-  setWR(mod_e::low);       // wr=low 
+  setCS(0);                // cs=low (all displays)
+  setWR(0);                // wr=low 
   delayMicroseconds(1);    // wr active-time req.=100ns
-  setWR(mod_e::high);      // wr=high
-  setCS(mod_e::high);      // cs=high (all displays)
+  setWR(1);                // wr=high
+  setCS(1);                // cs=high (all displays)
 }
 
-uint8_t HDSP2112::RdData(uint8_t id, uint8_t addr) {
+uint8_t HDSP2112::RdData(uint8_t addr,uint8_t hid) {
   uint8_t data=0;
   DataDirection(INPUT);    // set GPIOB to read-mode
   delayMicroseconds(1);    // wait a little
   m_U1.writeGPIOA(addr);   // set address 
-  setCS(id,mod_e::low);    // cs=low
-  setRD(mod_e::low);       // rd=low 
+  setCS(0,hid);            // cs=low
+  setRD(0);                // rd=low 
   delayMicroseconds(1);    // rd-low-to-data-valid-setup-time req.=75ns 
   data=m_U1.readGPIOB();   // read data from GPIOB d[0..7]
-  setRD(mod_e::high);      // rd=high
-  setCS(id,mod_e::high);   // cs=high
+  setRD(1);                // rd=high
+  setCS(1,hid);            // cs=high
   DataDirection(OUTPUT);   // set GPIOB to normal write-mode
   delayMicroseconds(1);    // wait a little
   return data;
 }
 
 
-// flashbits MSB=leftmost character MSB=rightmost character 
 void HDSP2112::SetFlashBits(uint16_t fb) {
   for(uint16_t ic=0; ic<16; ic++) { 
     uint8_t id = (ic<8)? 0:1;      // select display [left,right]
     uint8_t addr = ic&7;           // address FLASH-Bit
     uint16_t msk = 0x8000>>ic;     // mask bit position
     uint8_t data = (uint8_t) ((msk==(msk & fb))? 1u : 0u); 
-    setFL(mod_e::low);             // FL=low
+    setFL(0);                      // FL=low
     delayMicroseconds(1);          // wait a little
     WrData(addr,data,id);
     delayMicroseconds(1);          // wait a little  
-    setFL(mod_e::high);            // FL=high
+    setFL(1);                      // FL=high
   }
 }
 
@@ -101,7 +100,7 @@ void HDSP2112::SetUdcFont(const uint8_t *font, uint8_t nChars){
     uint32_t offset=ic*UDC_rows;
     SetUdChar(font+offset,ic);
   }
-  SetUdChar(font,0); // some workarround 
+  SetUdChar(font,0); // workarround: first char needs double set
   Reset();
 }
 
@@ -127,14 +126,51 @@ void HDSP2112::WriteChar(char ch) {
   }
 }
 
-uint8_t HDSP2112::Selftest(uint8_t id) {
+void HDSP2112::WriteChar(const uint8_t pos, char ch) {
+  m_pos = pos;     // update position
+  WriteChar(ch);   // write char
+}
+
+size_t HDSP2112::WriteText(const uint8_t pos, const char *format, ...) {
+  char loc_buf[64]={0};
+  char *temp = loc_buf;
+  va_list arg;
+  va_list copy;
+  va_start(arg, format);
+  va_copy(copy, arg);
+  int len = vsnprintf(temp, sizeof(loc_buf), format, copy);
+  va_end(copy);
+  if(len < 0) {
+    va_end(arg);
+    return 0;
+  }
+  if(len >= (int)sizeof(loc_buf)) {  // comparation of same sign type for the compiler
+    temp = (char*) malloc(len+1);
+    if(temp == NULL) {
+      va_end(arg);
+      return 0;
+    }
+    len = vsnprintf(temp, len+1, format, arg);
+  }
+  va_end(arg);
+  SetPos(pos);
+  len = write((uint8_t*)temp, len);
+  if(temp != loc_buf){
+    free(temp);
+  }
+  return len;
+}
+
+
+
+uint8_t HDSP2112::Selftest(uint8_t hid) {
   m_cwr |= cwrTEST;                 // start selftest cwrTEST=1
-  WrData(adrCWR, m_cwr, id);
+  WrData(adrCWR,m_cwr,hid);
   delay(7000);                      // datasheet states 4.5 sec
   m_cwr &= ~cwrTEST;                // stop selftest cwrTEST=0
-  WrData(adrCWR, m_cwr, id); 
+  WrData(adrCWR,m_cwr,hid); 
   delay(100);
-  uint8_t data=RdData(id, adrCWR);  // read back control-word-register
+  uint8_t data=RdData(adrCWR,hid);  // read back control-word-register
   delay(100);
   return ((cwrTSTOK == (data&cwrTSTOK)) ? 1 : 0); // cwrTSTOK=1 --> OK
 }
