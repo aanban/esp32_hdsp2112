@@ -1,245 +1,329 @@
 #ifndef __HDSP2112_H__
 #define __HDSP2112_H__ 
 
-#ifndef __ADAFRUIT_MCP23X17_H__
-#include <Adafruit_MCP23X17.h>
-#endif
+#include "MCP23S17.h"
 
-// use the standard ESP32 SPI ports (SPI_CLK=18, SPI_MOSI=23, SPI_MISO=19)
-constexpr int8_t SPI_cs    =  5;          // SPI chip select 
-constexpr int8_t SPI_clk   = 18;          // SPI clock 
-constexpr int8_t SPI_mosi  = 23;          // SPI master-out-slave-in
-constexpr int8_t SPI_miso  = 19;          // SPI master-in-slave-out
+///< configure number of displays in use 
+constexpr uint8_t nDSP     = 2;              // number of displays 
+constexpr uint8_t nPOS     = 8;              // number of chars per display
+constexpr uint8_t maxPOS   = nPOS * nDSP;    // total number of chars
 
-// two mcp23s17 devices are connected in parallel and are accessed via addresses a[2..0]
-constexpr uint8_t U1_addr  = 0b00000001;  // a[2]=1 a[1]=1 a[0]=1 0b001 --> 0x21
-constexpr uint8_t U2_addr  = 0b00000111;  // a[2]=0 a[1]=0 a[0]=1 0b111 --> 0x27
+///< use the standard ESP32 SPI ports (SPI_CLK=18, SPI_MOSI=23, SPI_MISO=19)
+constexpr int8_t SPI_clk   = 18;             // SPI clock 
+constexpr int8_t SPI_mosi  = 23;             // SPI master-out-slave-in
+constexpr int8_t SPI_miso  = 19;             // SPI master-in-slave-out
 
-// m_U2.GPB[0..5] control signals hdsp2112 displays
-constexpr uint8_t gpbRES   = 0b00000001;  // (pin 1) GPB[0] = reset
-constexpr uint8_t gpbFL    = 0b00000010;  // (pin 2) GPB[1] = flash-bit
-constexpr uint8_t gpbWR    = 0b00000100;  // (pin 3) GPB[2] = write enable
-constexpr uint8_t gpbRD    = 0b00001000;  // (pin 4) GPB[3] = read enable
-constexpr uint8_t gpbCS0   = 0b00010000;  // (pin 5) GPB[4] = chip select 0
-constexpr uint8_t gpbCS1   = 0b00100000;  // (pin 6) GPB[5] = chip select 1
+///< two mcp23s17 are connected in parallel using HAEN and addresses 1 and 7
+constexpr uint8_t U1_addr  = 0b00000001;     // 0b001=0x1 --> register=0x21 
+constexpr uint8_t U2_addr  = 0b00000111;     // 0b111=0x7 --> register=0x27
+constexpr uint8_t PORT_A   = 0;              // Port-A = Pin[21..28]
+constexpr uint8_t PORT_B   = 1;              // Port-B = Pin[ 1.. 8]
 
-// hdsp2112 control-word-register
-constexpr uint8_t cwrCLEAR = 0b10000000;  // 0=normal 1=clear flash and char
-constexpr uint8_t cwrTEST  = 0b01000000;  // 0=normal 1=self test
-constexpr uint8_t cwrTSTOK = 0b00100000;  // selftest result 0=failed 1=OK
-constexpr uint8_t cwrBLINK = 0b00010000;  // 0=off 1=blinking
-constexpr uint8_t cwrFLASH = 0b00001000;  // 0=off 1=flashing
+// m_ctrl = U2.PORT_B[0..7] used as hdsp2112 control signals
+constexpr uint8_t gpbRES   = 0b00000001;     // U2.GPB[0] = reset
+constexpr uint8_t gpbFL    = 0b00000010;     // U2.GPB[1] = flash-bit
+constexpr uint8_t gpbWR    = 0b00000100;     // U2.GPB[2] = write enable
+constexpr uint8_t gpbRD    = 0b00001000;     // U2.GPB[3] = read enable
+constexpr uint8_t gpbCS0   = 0b00010000;     // U2.GPB[4] = cs display 0 
+constexpr uint8_t gpbCS1   = 0b00100000;     // U2.GPB[5] = cs display 1
+constexpr uint8_t gpbCS2   = 0b01000000;     // U2.GPB[6] = cs display 2
+constexpr uint8_t gpbCS3   = 0b10000000;     // U2.GPB[7] = cs display 3
 
-// hdsp2112 address for Flash,User-defined,Control and Character-RAM
-constexpr uint8_t adrUDA   = 0b00000000;  // hdsp2112 User-Defined-Address address
-constexpr uint8_t adrUDR   = 0b00001000;  // hdsp2112 User-Defined-RAM address
-constexpr uint8_t adrCWR   = 0b00010000;  // hdsp2112 Control-Word-Register address
-constexpr uint8_t adrCHR   = 0b00011000;  // hdsp2112 character-RAM address
+// internal hdsp2112 control-word-register flags
+constexpr uint8_t cwrCLEAR = 0b10000000;     // 0=normal 1=clear flash and char
+constexpr uint8_t cwrTEST  = 0b01000000;     // 0=normal 1=self test
+constexpr uint8_t cwrTSTOK = 0b00100000;     // selftest result 0=failed 1=OK
+constexpr uint8_t cwrBLINK = 0b00010000;     // 0=off 1=blinking
+constexpr uint8_t cwrFLASH = 0b00001000;     // 0=off 1=flashing
 
-constexpr uint8_t maxPOS   = 16;          // two hdsp2112 displays with 8 chars each
+// internal hdsp2112 base addresses
+constexpr uint8_t adrUDA   = 0b00000000;     // User-Defined-Address
+constexpr uint8_t adrUDR   = 0b00001000;     // User-Defined-RAM
+constexpr uint8_t adrCWR   = 0b00010000;     // Control-Word-Register
+constexpr uint8_t adrCHR   = 0b00011000;     // character-RAM
 
-constexpr uint8_t utf8Ascii=128;          // ascii chars 
-constexpr uint8_t utf8chUDC=utf8Ascii+16; // user defined chars
+// ranges for ascii and extended user defined chars 
+constexpr uint8_t utf8Ascii= 128;            // ascii chars 
+constexpr uint8_t utf8chUDC= utf8Ascii+16;   // user defined chars
 
+// main class is derived from Print 
 class HDSP2112 : public Print {
   private:
-    Adafruit_MCP23X17 m_U1;   // mcs23s17 (U1_addr) GPA[0..7]=data[0..7] GBB[0..4]=address[0..4]
-    Adafruit_MCP23X17 m_U2;   // mcs23s17 (U2_addr) GBB[0..4]=[res,fl,wr,rd,cs0,cs1]
-    int8_t m_spi_cs;          // SPI chip-select
-    int8_t m_spi_clk;         // SPI clock
-    int8_t m_spi_mosi;        // SPI master-out-clock-in
-    int8_t m_spi_miso;        // SPI master-in-clock-out
-    uint8_t m_ctrl;           // hdsp2112 control byte --> GBB[0..4]: [RES,FL,WE,CS0,CS1]
-    uint8_t m_cwr;            // hdsp2112 control-word-register [clear, selftest, blink, flash, bright(3)]
-    uint8_t m_pos;            // current cursor position 
+    MCP23S17 *m_U1;     // PORT_A[0..7]=data[0..7] PORT_B[0..4]=addr[0..4]
+    MCP23S17 *m_U2;     // PORT_B[0..4]=[res,fl,wr,rd,cs0,cs1]
+    bool m_ok;          // 1=(U1 and U2 are valid)  0=(alloc failed)
+
+    int8_t m_spi_cs;    // SPI chip-select
+    int8_t m_spi_clk;   // SPI clock
+    int8_t m_spi_mosi;  // SPI master-out-clock-in
+    int8_t m_spi_miso;  // SPI master-in-clock-out
+
+    uint8_t m_ctrl;     // control-byte [RES,FL,WR,RD,CS0,CS1,CS2,CS3]
+    uint8_t m_cwr;      // internal hdsp2112 control-word-register:
+                        // [CLR, selftest, blink, flash, bright(3)]
+    
+    uint8_t m_pos;      // current cursor position 
+
 
   public:
     // constructor
-    // @param spi_cs spi chip select 
-    // @param spi_clk spi clock
-    // @param spi_mosi spi master-out-slave-in
-    // @param spi_miso spi master-in-slave-out
-    HDSP2112(const int8_t spi_cs=SPI_cs, 
-             const int8_t spi_clk=SPI_clk, 
-             const int8_t spi_mosi=SPI_mosi, 
-             const int8_t spi_miso=SPI_miso); 
+    // @param spi_cs    chip select 
+    // @param spi_clk   spi-clock           (default=VSPI)
+    // @param spi_mosi  master-out-slave-in (default=VSPI)
+    // @param spi_miso  master-in-slave-out (default=VSPI)
+    HDSP2112(const int8_t spi_cs, 
+             const int8_t spi_clk  = SPI_clk, 
+             const int8_t spi_mosi = SPI_mosi, 
+             const int8_t spi_miso = SPI_miso
+             ); 
 
-    // hardware reset for both hdsp2112 displays 
+    // destructor
+    // frees the two dynamic allocated MCP23S17 instances m_U1 and m_U2
+    inline ~HDSP2112() {
+      if(NULL!=m_U1) {
+        delete m_U1;
+        m_U1=NULL; 
+      }
+      if(NULL!=m_U2) {
+        delete m_U2; 
+        m_U2=NULL; 
+      } 
+      m_ok=false;
+    }
+
+    // resets all hdsp2112 displays 
     // - set CS=low and RES=low 
-    // - wait pulsewith 10µs (min. 300ns) 
+    // - wait pulse width 10µs (min. 300ns) 
     // - set CS=high and RES=high 
     // - and wait until device is ready 1ms (min. 110µs)
     void Reset(void);
 
-    // init mcp23s17 portexpander and hdsp2112 displays
+    // inits the two mcp23s17 and all hdsp2112 displays
     // - start SPI Bus
-    // - init the two mcp23s17 portexpander
-    // - reset the two hdsp2112 displays
+    // - init the two mcp23s17 port expander
+    // - reset all hdsp2112 displays
     void Begin(void);
 
-    // prints a character, 
-    // select left or right display, 
-    // print char to m_pos, 
-    // increment m_pos
-    // @param ch charcter to be printed
+    // prints character ch at current cursor position: 
+    // select corresponding display, print ch to current cursor position, 
+    // increment cursor position
+    // @param ch character to be printed
     void WriteChar(char ch);
 
-    // prints character ch to given position pos
-    // select left or right display, 
-    // set m_pos to pos
-    // print char ch to m_pos,
-    // increment m_spi_miso
+    // prints character ch at pos:
+    // select corresponding display, set cursor position to pos, print ch, 
+    // increment cursor position
     // @param pos  position within display
-    // @param ch   charcter to be printed
+    // @param ch   character to be printed
     void WriteChar(const uint8_t pos, char ch);
 
-    // set position within display and print formated text
-    // @param pos    position to set
+    // sets the cursor position to pos and prints text printf() like 
+    // @param pos    cursor position
     // @param format printf style format string
     // @param ...    variable parameters
     size_t WriteText(const uint8_t pos, const char *format, ...);
 
-    // start selftest cwrTEST=1, wait 6 sec, stop selftest cwrTEST=0, 
-    // read back controll-word-register, and check cwrTSTOK[0=failed, 1=OK]
-    // @param hid hdsp2112 identifier [0=left, 1=right]
+    // starts selftest with cwrTEST=1, waits 6 sec, stops selftest with 
+    // cwrTEST=0, reads back control-word-register, and checks 
+    // cwrTSTOK[0=failed, 1=OK]
+    // @param hid hdsp2112 identifier [0..3]
     // @return test result [0=failed, 1=OK]
     uint8_t Selftest(uint8_t hid);
 
-    // clear Display, fill all chars with blanks, set m_pos=0
+    // clears all displays, i.e. fills all chars with blanks, finally 
+    // sets cursor position to 0
     inline void clear(void){ 
-      WriteText(0,"                "); 
       SetPos(0);
+      for(uint8_t pos=0;pos<maxPOS;pos++){
+        WriteChar(' ');
+      }
       delay(20);
+      SetPos(0);
     }
 
-    // set brightness for both displays, fill brightness[0..2] into m_cwr[0..2] register
+    // sets brightness of all displays
     // @param brightness [0..7] 0=100% 7=0%
     inline void SetBrightness(uint8_t brightness) { 
-      uint8_t bn=brightness & 7;   // limit to bit[0..2]
-      for(uint8_t mc=0;mc<3;mc++){ // extract and fill bit[0..2]
-        uint8_t ms=(1u<<mc);       // mask bit
-        m_cwr = (ms==(bn&ms))? m_cwr|ms : m_cwr& ~ms; 
+      if(m_ok) {
+        uint8_t bn=brightness & 7;   // limit value to 3 bit
+        for(uint8_t mc=0;mc<3;mc++){ 
+          uint8_t ms=(1u<<mc);       // mask bit
+          m_cwr = (ms==(bn&ms))? m_cwr|ms : m_cwr& ~ms; 
+        }
+        for(uint8_t hid=0;hid<nDSP; hid++) { 
+          WrData(adrCWR,m_cwr,hid);  // set brightness for all displays
+        }
       }
-      WrData(adrCWR,m_cwr,0);      // left display
-      WrData(adrCWR,m_cwr,1);      // right display
     }
     
-    // set Flash-Bits, each bit belongs to one char posision of left and 
-    // right display, arrangement flashbits MSB=leftmost character MSB=rightmost character 
-    // @param flashbits [0=permanently on, 1=flash]
-    void SetFlashBits(uint16_t flashbits);
+    // sets flash bits according the given flash_bits, each bit belongs to a 
+    // single char within a corresponding display. The arrangement of the 
+    // flash bits: MSB=leftmost character in leftmost display MSB=rightmost 
+    // character in rightmost display. 
+    // @param flash bits [0=permanently on, 1=flash]
+    void SetFlashBits(uint32_t flash_bits);
 
-    // set flash-Mode, the Flash-Bits have to be set before, 
-    // they determine which char pos will flash
+
+    // turns on/off flash mode for all displays. A previous call of 
+    // SetFlashBits() determines which positions within the display will 
+    // flash.
     // @param mode [0=on, 1=off]
     inline void FlashMode(uint8_t mode) {
-      m_cwr = (0==mode) ? m_cwr & ~cwrFLASH : m_cwr|cwrFLASH;
-      WrData(adrCWR,m_cwr);
+      if(m_ok) {
+        m_cwr = (0==mode) ? m_cwr & ~cwrFLASH : m_cwr|cwrFLASH;
+        WrData(adrCWR,m_cwr);
+      }
     }
 
-    // set blink-Mode, the complete display will blink
-    // @param mode [0=on, 1=off]
+    // turns on blink mode for all displays
+    // @param mode [0=on, 1=off] 
     inline void BlinkMode(uint8_t mode) {
-      m_cwr = (0==mode) ? m_cwr & ~cwrBLINK : m_cwr|cwrBLINK;
-      WrData(adrCWR,m_cwr);
+      if(m_ok) {
+        m_cwr = (0==mode) ? m_cwr & ~cwrBLINK : m_cwr|cwrBLINK;
+        WrData(adrCWR,m_cwr);
+      }
     }
 
-    // set the cursor postion
+    // sets the cursor position, new cursor position is limited to maxPOS-1. 
     // @param pos the new cursor position 
     inline void SetPos(uint8_t pos) { m_pos=(pos<maxPOS)? pos : maxPOS-1; }
 
-    // gets the cursor postion
+    // gets the cursor position
     // @return current cursor postion m_cur
     inline uint8_t GetPos(void) { return m_pos; }
 
-    // translates UTF8 characters into the printable character 
-    // set of the HDSP-2112 display, characters in the range [32..127] 
-    // are passed directly and e.g. some extended characters like äöü 
-    // are mapped to [0..31]
+    // translates UTF8 characters into the printable character set of the 
+    // HDSP-2112 display, characters in the range [32..127] are passed 
+    // directly and e.g. some extended characters like "äöü" are mapped 
+    // to [0..31]
     // @param utf8_ch UTF8 character
     // @return a printable character for the 
     uint8_t UTF8_to_HDSP(uint8_t utf8_ch);
 
-    // set a user defined Font, the charactes are filled to the user defined characater ram
+    // stores a user defined Font, the characters are filled to the 
+    // user defined characters ram within all hdsp2112 displays
     // @param font user defined font with 7 rows 
     // @param nChars number of chars
     void SetUdcFont(const uint8_t *font, uint8_t nChars);
 
-    // set a user defined character in the UDC Ram
+    // sets a single user defined character in the UDC Ram within all displays
     // @param map user defined character 5 cols x 7 rows
     // @param idx index in UDC-Ram
     void SetUdChar(const uint8_t *map, const uint8_t idx);
 
-  protected:
 
-    // sets chip_select input of given hdsp2112 display to [low,high]
-    // @param mod [0=low,1=high]
-    // @param hid hdsp2112 identifier [0=left, 1=right]
-    inline void setCS(uint8_t mod, uint8_t hid) {
-      if(mod==0) {
-        m_ctrl &= (0==hid)? ~gpbCS0 : ~gpbCS1;
-      } else {
-        m_ctrl |= (0==hid)?  gpbCS0 :  gpbCS1;
-      }
-      m_U2.writeGPIOB(m_ctrl);
+  protected:
+    // ctrl signals of all displays, by writing "m_ctrl" to U2.PORT_B
+    // m_ctrl = [RES,FL,WR,RD,CS0,CS1,CS2,CS3]
+    inline void setCtrl(void) {
+      m_U2->write8(PORT_B,m_ctrl);
     }
 
-    // sets chip_select input of both hdsp2112 displays to [low,high]
+    // address bus of all displays, by writing "addr" to U1.PORT_A
+    // @param addr address
+    inline void setAddr(uint8_t addr) {
+      m_U1->write8(PORT_A,addr);
+    };
+
+    // data bus of all displays, by writing "data" to U1.PORT_B 
+    // @param data data 
+    inline void setData(uint8_t data) {
+      m_U1->write8(PORT_B,data);
+    };
+
+    // CS signal for a single hdsp2112 display with identifier hid
+    // @param mod [0=CS low,1=CS high]
+    // @param hid identifier [0..3], displays are arranged from left to right
+    inline void setCS(uint8_t mod, uint8_t hid) {
+      if(m_ok) {
+        switch(hid) {
+          case 0: { // left most display
+            m_ctrl = (0==mod) ? m_ctrl & ~gpbCS0 : m_ctrl | gpbCS0;
+            break;
+          }
+          case 1: { // center left display
+            m_ctrl = (0==mod) ? m_ctrl & ~gpbCS1 : m_ctrl | gpbCS1;
+            break;
+          }
+          case 2: { // center right display
+            m_ctrl = (0==mod) ? m_ctrl & ~gpbCS2 : m_ctrl | gpbCS2;
+            break;
+          }
+          case 3: { // right most display
+            m_ctrl = (0==mod) ? m_ctrl & ~gpbCS3 : m_ctrl | gpbCS3;
+            break;
+          }
+        }
+        setCtrl();
+      }
+    }
+    
+    // CS signal of all hdsp2112 displays
     // @param mod [0=low,1=high]
     inline void setCS(uint8_t mod) {
-      if(mod==0) {
-        m_ctrl &= ~gpbCS0 & ~gpbCS1;
-      } else {
-        m_ctrl |=  gpbCS0 |  gpbCS1;
+      if(m_ok) {
+        if(mod==0) {
+          m_ctrl &= ~gpbCS0 & ~gpbCS1 & ~gpbCS2 & ~gpbCS3;
+        } else {
+          m_ctrl |=  gpbCS0 |  gpbCS1 |  gpbCS2 |  gpbCS3;
+        }
+        setCtrl();
       }
-      m_U2.writeGPIOB(m_ctrl);
     }
 
-    // sets fl input of both displays to [low,high]
+    // FL signal for all hdsp2112 displays
     // @param mod [0=low,1=high]
     inline void setFL(uint8_t mod) {
-      m_ctrl = (mod==0) ? (m_ctrl & ~gpbFL) : (m_ctrl | gpbFL);
-      m_U2.writeGPIOB(m_ctrl);
-    }
-
-    // control write_enable input of both displays
-    // @param mod [0=low,1=high]
-    inline void setWR(uint8_t mod) {
-      m_ctrl = (mod==0) ? (m_ctrl & ~gpbWR) : (m_ctrl | gpbWR);
-      m_U2.writeGPIOB(m_ctrl);
-    }
-
-    // control read_enable input of both displays
-    // @param mod [0=low,1=high]
-    inline void setRD(uint8_t mod) {
-      m_ctrl = (mod==0) ? (m_ctrl & ~gpbRD) : (m_ctrl | gpbRD);
-      m_U2.writeGPIOB(m_ctrl);
-    }
-
-    // Writes data to given hdsp2112 display
-    // @param addr  address to write
-    // @param data  data to write
-    // @param hid   hdsp2112 identifier [0=left,1=right]
-    void WrData(uint8_t addr, uint8_t data, uint8_t hid);
-
-    // Writes data to both hdsp2112 display
-    // @param addr  address to write
-    // @param data  data to write
-    void WrData(uint8_t addr, uint8_t data);
-
-    // set direction of the MCP23s17 U1 GDB-port.
-    // it is needed for reading data d[0..7] a display 
-    // [OUTPUT=writing to display, INPUT=reading from display]
-    // @param mode [OUTPUT,INPUT]
-    inline void DataDirection(uint8_t mode){
-      for(uint8_t ic=8;ic<16;ic++ ) {
-        m_U1.pinMode(ic,mode);
+      if(m_ok) {
+        m_ctrl = (mod==0) ? (m_ctrl & ~gpbFL) : (m_ctrl | gpbFL);
+        setCtrl();
       }
     }
 
-    // Reads data from given hdsp2112 display.
-    // Internally first DataDirection(INPUT) is called to set the MCP23s17 to "read-mode" 
-    // and after reading the data, DataDirection(OUPUT) is called to set the MCP23s17 to normal "write-mode" again. 
+    // WR signal for all hdsp2112 displays
+    // @param mod [0=low,1=high]
+    inline void setWR(uint8_t mod) {
+      if(m_ok) {
+        m_ctrl = (mod==0) ? (m_ctrl & ~gpbWR) : (m_ctrl | gpbWR);
+        setCtrl();
+      }
+    }
+
+    // RD signal for all hdsp2112 displays
+    // @param mod [0=low,1=high]
+    inline void setRD(uint8_t mod) {
+      if(m_ok) {
+        m_ctrl = (mod==0) ? (m_ctrl & ~gpbRD) : (m_ctrl | gpbRD);
+        setCtrl();
+      }
+    }
+
+    // writes data to specific hdsp2112 display with identifier hid
+    // @param addr  address
+    // @param data  data
+    // @param hid   hdsp2112 identifier [0..3]
+    void WrData(uint8_t addr, uint8_t data, uint8_t hid);
+
+    // writes data to all hdsp2112 displays
+    // @param addr  address
+    // @param data  data
+    void WrData(uint8_t addr, uint8_t data);
+
+    // sets direction of MCP23s17 U1.Port-B, usual the direction is set to 
+    // OUTPUT, e.g. calling a selftest, the direction of U1.PORT-B has to be 
+    // set to INPUT in order to read data from the display. 
+    // @param mode OUTPUT=write to display, INPUT=read from display
+    inline void DataDirection(uint8_t mode) {
+      if(m_ok) {
+        uint8_t mask=(INPUT==mode) ? 0xff:0x00;
+        m_U1->pinMode8(PORT_B,mask);
+      }
+    }
+
+    // reads data from given hdsp2112 display.
+    // Internally first DataDirection(INPUT) is called to set the U1.Port-B 
+    // to "reading-data". After reading the data, DataDirection(OUPUT) is 
+    // called to set the U1.Port-B to normal "writing-data" again. 
     // @param addr  address to write
     // @param hid   hdsp2112 identifier [0..1]
     // @return data from device

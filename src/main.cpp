@@ -1,24 +1,22 @@
+#include <vector>
+
 #include "hdsp2112.h"
 #include "hdsp2112_udc_font.h"
 
 ///< user defined SPI interface, here ESP32 standard SPI interface (VSPI)
-constexpr int8_t s_cs   =  5;
+constexpr int8_t s_cs   = 32;
 constexpr int8_t s_clk  = 18;
 constexpr int8_t s_mosi = 23;
 constexpr int8_t s_miso = 19;
+
 HDSP2112 d(s_cs,s_clk,s_mosi,s_miso); // create instance with user defined SPI
-
-///< standard SPI interface 
-// HDSP2112 d;    // create default instance with SPI instance from SPI.h
-
 
 // reset and clear display, print title, and wait a second
 // @param title text to print
 inline void testTitle(const char* title){
   d.Reset();
   d.clear();
-  d.printf("%s",title);
-  d.SetPos(0);
+  d.WriteText(0,title);
   delay(1000);
 }
 
@@ -40,9 +38,12 @@ void testCharRam(void) {
 
 // Brightness, loop brightness between 0=100% and 6=13%
 void testBrightness(void) {
-  uint8_t bn_p[8] = { 100u,80u,53u,40u,27u,20u,13u,0u };
+  //uint8_t bn_p[8] = { 100u,80u,53u,40u,27u,20u,13u,0u };
+  std::vector<uint8_t> bn_p { 100u,80u,53u,40u,27u,20u,13u,0u };
+
   testTitle("testBrightness  ");
-  for(uint8_t ic=0; ic<8; ic++) {
+  //for(uint8_t ic=0; ic<8; ic++) {
+  for(uint8_t ic=0; ic < bn_p.size();ic++) {
     d.WriteText(0,"Bright[%u] = %3u%%",ic,bn_p[ic]);
     d.SetBrightness(ic);
     delay(1000);
@@ -52,11 +53,13 @@ void testBrightness(void) {
 
 // Flashing Mode, set flash bits at different positions
 void testFlashingText(void) {
-  testTitle("testFlashingText");
+  testTitle("1234flashing5678");
   d.FlashMode(1);
-  d.SetFlashBits(0b1111000000000000);delay(5000);
-  d.SetFlashBits(0b0000111111110000);delay(5000);
-  d.SetFlashBits(0b0000000000001111);delay(5000);
+  d.SetFlashBits((uint32_t)0xf0000000);delay(5000);
+  d.SetFlashBits((uint32_t)0x0ff00000);delay(5000);
+  d.SetFlashBits((uint32_t)0x000f0000);delay(5000);
+  d.SetFlashBits((uint32_t)0xaaaa0000);delay(5000);
+  d.SetFlashBits((uint32_t)0x55550000);delay(5000);
   d.FlashMode(0);
   d.clear();
 }
@@ -191,32 +194,32 @@ void testUDC(void){
 // second user defined font with wipe chars
 void testUDCwipe(void){
   d.SetUdcFont(UDC_wipe,UDC_nch);  // init wipe user defined characters
-  testTitle("UDC_wipe");
+  testTitle("UDC_wipe        ");
   prope(prop2,sizeof(prop2),10,8,250);
   prope(prop4,sizeof(prop4),10,8,80);
   prope(prop5,sizeof(prop5),10,8,80);
   d.clear(); 
-  d.printf("TextTextTextText"); 
-  wiper(wipe0,sizeof(wipe0),0, 7,50); 
-  wiper(wipe1,sizeof(wipe1),8,15,50); 
+  d.printf("TextTextTextText "); 
+  wiper(wipe0,sizeof(wipe0),0,15,50); 
   d.SetUdcFont(UDC_font,UDC_nch); // init standard user defined characters
 }
 
  void setup() {
-  d.Begin();                          // does all the init stuff (SPI, MCP23s17, HDSP2112)
-  d.SetUdcFont(UDC_font,UDC_nch);     // init user defined characters
-  d.Reset();                          // reset display
-  d.WriteText(0,"Hdsp2112-Display");  // say hello
+  //Serial.begin(115200);
+  d.Begin();                        // does all the init stuff (SPI, MCP23s17, HDSP2112)
+  d.SetUdcFont(UDC_font,UDC_nch);   // init user defined characters
+  d.Reset();                        // reset display
+  d.printf("Hdsp2112-Display");     // say hello
   delay(2000);
 }
 
 void loop() {
-  doSelftest();
   testCharRam();
   testUtf8String();
-  testUDCwipe();
   testUDC();
+  testUDCwipe();
   testFlashingText();
   testBlinkingText();
   testBrightness();
+  doSelftest();
 }
