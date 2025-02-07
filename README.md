@@ -19,7 +19,7 @@ framework = arduino
 ## 1.1. Wiring of multiple MCP23s17 
 The data sheet states that it is possible to connect multiple MCP23s17s to a SPI bus in parallel with one single CS signal only. Follow these steps:
 ### 1.1.1. Pre-assign address pins A0..A2
-Each MCP23s17 module requires a unique address, that is done with the wiring of the address pins A[0..2]. The pre-assigned address pins in this setup are:
+Each MCP23s17 module requires a unique address, that is done with the wiring of the address pins `A[0..2]`. The pre-assigned address pins in this setup are:
 
 | device | A0 | A1 | A2 | SPI-control | Comment                    |
 |:------:|:--:|:--:|:--:|:-----------:|:---------------------------|
@@ -34,7 +34,7 @@ When initializing the two MCP23s17, the `HAEN` bit (=hardware address enable) mu
   m_U2.enableAddrPins();  // enable HAEN function
 ```
 ### 1.1.3. Select the MCP23s17 devices via SPI-control-byte
-The devices are selected via the **SPI control byte**  according to the pre-assigned address pins A0..A2
+The devices are selected via the **SPI control byte**  according to the pre-assigned address pins `A0..A2`
 
 > see [mcp23s17.pdf](doc/mcp23s17.pdf) , Figure 3-5: **SPI-Control-Byte Format**, page 15 
 
@@ -58,14 +58,17 @@ The table below shows the wiring of the SPI connections for the ESP32 and the MC
 
 
 ## 1.3. Wiring the HDSP-2112 displays
-The HDSP-2112 displays are connected in parallel, and each is selected via its own chip-select signal (`CS_0`, `CS_1`)
+The HDSP-2112 displays are connected in parallel, and each is selected via its own chip-select signal (`CS_0`, `CS_1`, `CS_2`, `CS_3` )
 
-To get a proper flashing function, the displays were wired (clock select `SEL` pin 11) so that the left display generates the clock `FLASH_CLK` for the right display. 
+To get a proper flashing function, the displays were wired (clock select `SEL` pin 11) so that the left display generates the clock `FLASH_CLK` for the other displays on the right. 
 
 | SEL (Pin 11) | level | comment |
 |:-:|:----:|:---|
 | U3| 3.3V |CLK (pin 12) work as output of flash-clock |
-| U4| GND  | CLK (pin 12) work as input 
+| U4| GND  |CLK (pin 12) work as input                 |
+| U5| GND  |CLK (pin 12) work as input                 |
+| U6| GND  |CLK (pin 12) work as input                 |
+
 
 >See specification [hp_HDSP-2112.pdf](doc/hp_HDSP-2112.pdf) page 9:  *clock-select* (**CLS** pin 11) and *clock-input/output* (**CLK**  pin 12) 
 
@@ -77,7 +80,7 @@ To get a proper flashing function, the displays were wired (clock select `SEL` p
 
 # 2. Considerations about SW
 ## 2.1. MCP23s17 Library
-The [Adafruit-MCP23017-Arduino-Library](https://github.com/adafruit/Adafruit-MCP23017-Arduino-Library) is used to control the MCP23s17 port expander
+The [MCP23S17](https://github.com/RobTillaart/MCP23S17) library is used to control the MCP23s17 port expander
 
 ## 2.2. Parent Class
 The class `HDSP2112` is derived from the class `Print` , so the member functions like `printf()` can be used easily. 
@@ -98,10 +101,10 @@ Some member functions as follows
 Some utf8 characters can be mapped to the internal character map, that is handled by the member function UTF8_to_HDSP(), e.g. `Ä` is mapped to `0x15` or `alpha` is mapped to `0x05`
 
 ## 2.5. Selftest() function
-The HDSP2112 self test is activated by setting `cwrTEST=1` within the control-word-register. The datasheet states that the procecdure needs about 4 sec, I set the wait time to 7sec. Afterwards the `cwrTSTOK` bit of the control-word-register indicates the status of the test. `cwrTSTOK=1` means that the test was `OK` else it `Failed`. Reading from the HDSP2121 means: change the MCP23s17's `m_U1.pinMode()` of the from OUTPUT to INPUT and set RD signal for the displays accordingly.
+The HDSP2112 self test is activated by setting `cwrTEST=1` within the control-word-register. The datasheet states that the procedure needs about 4 sec, I set the wait time to 7sec. Afterwards the `cwrTSTOK` bit of the control-word-register indicates the status of the test. `cwrTSTOK=1` means that the test was `OK` else it `Failed`. Reading from the HDSP2121 means: change the MCP23s17's `m_U1.pinMode()` of the from OUTPUT to INPUT and set RD signal for the displays accordingly.
 
 > [!NOTE]
-> During the tests I found out that a Reset() must be called after the Selftest() function, in order to avoid a strange behaviour of the BlinkMode and FlashMode functions. 
+> During the tests I found out that a Reset() must be called after the Selftest() function, in order to avoid a strange behavior of the BlinkMode and FlashMode functions. 
 
 ## 2.6. Basic example
 The following main.cpp shows a basic example:
