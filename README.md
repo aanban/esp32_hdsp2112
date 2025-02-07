@@ -21,10 +21,10 @@ The data sheet states that it is possible to connect multiple MCP23s17s to a SPI
 ### 1.1.1. Pre-assign address pins A0..A2
 Each MCP23s17 module requires a unique address, that is done with the wiring of the address pins `A[0..2]`. The pre-assigned address pins in this setup are:
 
-| device | A0 | A1 | A2 | SPI-control | Comment                    |
-|:------:|:--:|:--:|:--:|:-----------:|:---------------------------|
-| U1     |  0 |  0 |  1 | 01000001x   | GPA=d[0..7], GPB=a[0..4]   |
-| U2     |  1 |  1 |  1 | 01000111x   | GPB=[res,fl,wr,rd,cs0,cs1] |
+| device | A0 | A1 | A2 | SPI-control | Comment                            |
+|:------:|:--:|:--:|:--:|:-----------:|:-----------------------------------|
+| U1     |  0 |  0 |  1 | 01000001x   | GPA=d[0..7], GPB=a[0..4]           |
+| U2     |  1 |  1 |  1 | 01000111x   | GPB=[res, fl, wr, rd, cs0, cs1, cs2, cs3] |
 
 
 ### 1.1.2. Activate HAEN bit (hardware-address-enable) in IOCON register
@@ -49,8 +49,8 @@ This is automatically handled within the driver. The specific addresses are set 
 
 The table below shows the wiring of the SPI connections for the ESP32 and the MCP23s17, i.e. the standard SPI bus of the ESP32 (VSPI) 
 
-| ESP32-GPIO | MCP23s17 U1 | MCP23s17 U2 | Comment                       |
-|:----------:|:-----------:|:-----------:|:------------------------------|
+| ESP32-GPIO | MCP23s17 U1 | MCP23s17 U2 | Comment                            |
+|:----------:|:-----------:|:-----------:|:-----------------------------------|
 | 05         | 11          | 11          | SPI_CS,  VSPI chip-select          |
 | 18         | 12          | 12          | SPI_CLK, VSPI clock                |
 | 23         | 13          | 13          | SPI_MOSI, VSPI master-out-slave-in |
@@ -62,12 +62,12 @@ The HDSP-2112 displays are connected in parallel, and each is selected via its o
 
 To get a proper flashing function, the displays were wired (clock select `SEL` pin 11) so that the left display generates the clock `FLASH_CLK` for the other displays on the right. 
 
-| SEL (Pin 11) | level | comment |
-|:-:|:----:|:---|
-| U3| 3.3V |CLK (pin 12) work as output of flash-clock |
-| U4| GND  |CLK (pin 12) work as input                 |
-| U5| GND  |CLK (pin 12) work as input                 |
-| U6| GND  |CLK (pin 12) work as input                 |
+| SEL (Pin 11) | level | comment                                   |
+|:------------:|:-----:|:------------------------------------------|
+| U3           | 3.3V  |CLK (pin 12) work as output of flash-clock |
+| U4           | GND   |CLK (pin 12) work as input                 |
+| U5           | GND   |CLK (pin 12) work as input                 |
+| U6           | GND   |CLK (pin 12) work as input                 |
 
 
 >See specification [hp_HDSP-2112.pdf](doc/hp_HDSP-2112.pdf) page 9:  *clock-select* (**CLS** pin 11) and *clock-input/output* (**CLK**  pin 12) 
